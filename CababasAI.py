@@ -5,14 +5,17 @@ import random
 from Faces import FACES
 from openai import OpenAI
 from PrintColors import TColors
+# from dotenv import load_dotenv
+
+# load_dotenv()
 
 MODEL = "ft:gpt-3.5-turbo-0125:wyu2:cameluo-cababas:9YCcnkvC"
 # MODEL = "gpt-3.5-turbo"
 API_KEY = os.environ.get('OPENAI_CABABAS_API_KEY')
 PROJECT_ID = os.environ.get('OPENAI_CABABAS_PROJECT_ID')
 ORGANIZATION_ID = os.environ.get('OPENAI_WYU2_ORGANIZATION_ID')
-PRESET_PATH = "Resources\\Preset.txt"
-HISTORY_PATH = "Resources\\History.json"
+PRESET_PATH = "Resources/Preset.txt"
+HISTORY_PATH = "Resources/History.json"
 
 RATE_LIMIT = 4
 LAST_REQ = time.time()
@@ -68,6 +71,9 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     response = chat_completion.choices[0].message.content
 
     finish_reason = chat_completion.choices[0].finish_reason
+    print(f'{TColors.B_FINISH_REASON}> Prompt tokens: {chat_completion.usage.prompt_tokens}{TColors.RESET}')
+    print(f'{TColors.B_FINISH_REASON}> Completion tokens: {chat_completion.usage.completion_tokens}{TColors.RESET}')
+    print(f'{TColors.B_FINISH_REASON}> Cost of generation: {TColors.RED}${(prompt_token_pricing(chat_completion.usage.prompt_tokens) + completion_token_pricing(chat_completion.usage.completion_tokens))}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Finish reason: {finish_reason}{TColors.RESET}')
 
     if (finish_reason == 'content_filter'): # Make sure content filter wasn't triggered
@@ -82,7 +88,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
         "role": "assistant","content": response
     })
 
-    while (len(history) > 100):
+    while (len(history) > 30):
         history.pop(0)
 
     saveHistory()
@@ -108,3 +114,12 @@ def clearHistory():
     global history
 
     history.clear()
+    
+def prompt_token_pricing(t):
+    return (t/1000000.0)*3
+
+def completion_token_pricing(t):
+    return (t/1000000.0)*6
+
+def token_pricing(p:int, c:int):
+    return prompt_token_pricing(p) + completion_token_pricing(c)
