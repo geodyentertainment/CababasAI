@@ -19,6 +19,7 @@ HISTORY_PATH = "Resources/History.json"
 
 RATE_LIMIT = 5
 RECOMMENDED_COST = 0.0025
+MAX_CONTENT_SIZE = 100
 LAST_REQ = time.time()
 
 enabled = False
@@ -40,12 +41,16 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     global AI_Client
     global enabled
     global history
+    global MAX_CONTENT_SIZE
 
     if not enabled and not ignore_flag:
         return "sowy wallibe says no ai rn ):"
     
     if current_time-LAST_REQ < RATE_LIMIT:
         return random.choice(FACES)
+    
+    if (len(content) >= MAX_CONTENT_SIZE):
+        return "i not reading allat " + random.choice(FACES)
 
     PRESET_FILE = open(PRESET_PATH, "r")
     messages = []
