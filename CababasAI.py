@@ -17,7 +17,7 @@ HISTORY_PATH = "Resources\\History.json"
 RATE_LIMIT = 4
 LAST_REQ = time.time()
 
-enabled = True
+enabled = False
 
 AI_Client = OpenAI(
     api_key=API_KEY,

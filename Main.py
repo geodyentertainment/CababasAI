@@ -42,11 +42,18 @@ class Wallibe(discord.Client):
         except Exception as e:
             await self.log_error_silent("Could not load message history: " + str(e))
 
-        try:
-            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="\"cab\""), status=discord.Status.dnd)
-            print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
-        except Exception as e:
-            await self.log_error_silent("Could not set Discord activity: " + str(e))
+        if (CababasAI.enabled):
+            try:
+                await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="\"cab\""), status=discord.Status.dnd)
+                print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
+            except Exception as e:
+                await self.log_error_silent("Could not set Discord activity: " + str(e))
+        else:
+            try:
+                await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="AI disabled :("), status=discord.Status.do_not_disturb)
+                print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
+            except Exception as e:
+                await self.log_error_silent("Could not set Discord activity: " + str(e))
 
     # Message reading
     async def on_message(self, message:discord.Message):
