@@ -52,11 +52,14 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     # Add all previous history to messages
     for m in history:
         messages.append(m)
-    messages.append({"role":"system", "content" : PRESET_FILE.read()})
+    messages.append({"role":"system","content":PRESET_FILE.read()})
     PRESET_FILE.close()
+    
+    while (len(history) > 20):
+        history.pop(0)
 
     # Add prompt to history
-    formatted_prompt = {"role": "user","content": content}
+    formatted_prompt = {"role":"user","content":content}
     messages.append(formatted_prompt)
 
     # Generate a response using ChatGPT
@@ -84,12 +87,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
 
     # Add response to history
     history.append(formatted_prompt)
-    history.append({
-        "role": "assistant","content": response
-    })
-
-    while (len(history) > 30):
-        history.pop(0)
+    history.append({"role":"assistant","content": response})
 
     saveHistory()
 
@@ -108,6 +106,7 @@ def loadHistory():
 
     HISTORY_FILE = open(HISTORY_PATH, "r")
     history = json.loads(HISTORY_FILE.read())
+    print(f'{TColors.B_SUCCESS}Loaded: {history}{TColors.RESET}')
     HISTORY_FILE.close()
 
 def clearHistory():
@@ -120,6 +119,3 @@ def prompt_token_pricing(t):
 
 def completion_token_pricing(t):
     return (t/1000000.0)*6
-
-def token_pricing(p:int, c:int):
-    return prompt_token_pricing(p) + completion_token_pricing(c)
