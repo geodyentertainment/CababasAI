@@ -3,6 +3,9 @@ import openai
 import time
 import CababasAI
 from PrintColors import TColors
+# from dotenv import load_dotenv
+
+# load_dotenv()
 
 import os
 
