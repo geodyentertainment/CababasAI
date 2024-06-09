@@ -18,6 +18,7 @@ PRESET_PATH = "Resources/Preset.txt"
 HISTORY_PATH = "Resources/History.json"
 
 RATE_LIMIT = 5
+RECOMMENDED_COST = 0.0025
 LAST_REQ = time.time()
 
 enabled = False
@@ -74,9 +75,12 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     response = chat_completion.choices[0].message.content
 
     finish_reason = chat_completion.choices[0].finish_reason
+
+    cost:float = (prompt_token_pricing(chat_completion.usage.prompt_tokens) + completion_token_pricing(chat_completion.usage.completion_tokens))
+
     print(f'{TColors.B_FINISH_REASON}> Prompt tokens: {chat_completion.usage.prompt_tokens}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Completion tokens: {chat_completion.usage.completion_tokens}{TColors.RESET}')
-    print(f'{TColors.B_FINISH_REASON}> Cost of generation: {TColors.RED}${(prompt_token_pricing(chat_completion.usage.prompt_tokens) + completion_token_pricing(chat_completion.usage.completion_tokens))}{TColors.RESET}')
+    print(f'{TColors.B_FINISH_REASON}> Cost of generation: {TColors.RED}${cost}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Finish reason: {finish_reason}{TColors.RESET}')
 
     if (finish_reason == 'content_filter'): # Make sure content filter wasn't triggered
@@ -95,7 +99,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     saveHistory()
 
     LAST_REQ = current_time
-    return response
+    return response, cost
 
 def saveHistory():
     global history

@@ -1,5 +1,6 @@
 import discord
 import openai
+import time
 import CababasAI
 from PrintColors import TColors
 
@@ -26,6 +27,7 @@ MODERATORS = {
 }
 BOT_ID = 1249083390980915201
 ERRORS_CHANNEL_ID = 1249121134398668951
+COST_CHANNEL_ID = 1249480355690319894
 
 ## Code
 class Wallibe(discord.Client):
@@ -107,7 +109,12 @@ class Wallibe(discord.Client):
                     print(f'> {sender} is accessing view history command.')
                     try:
                         dm:discord.DMChannel = await sender.create_dm()
-                        await dm.send(f'```\n{CababasAI.history}\n```')
+
+                        history_file = open(CababasAI.HISTORY_PATH, "rb")
+
+                        ctime:str = str(time.time())
+
+                        await dm.send("```\nHistory Backup " + ctime + "\n```", file=discord.File(history_file, "historybackup"+ctime+".json"))
                     except Exception as e:
                         await self.log_error(channel, "Error while sending AI history: " + str(e))
 
@@ -141,11 +148,12 @@ class Wallibe(discord.Client):
         try:
             async with channel.typing():
                 if (channel.id == WHITELISTED_CHANNELS["PRIVATETEST"]):
-                    response = CababasAI.process_response_ai_flag(content, True)
+                    response, cost = CababasAI.process_response_ai_flag(content, True)
                 else:
-                    response = CababasAI.process_response_ai(content)
+                    response, cost = CababasAI.process_response_ai(content)
 
             await self.send_msg(channel, response)
+            await self.log_cost(cost)
 
         except openai.RateLimitError as e1:
             await self.send_msg(channel, "Cababas being rate limited ):")
@@ -158,6 +166,11 @@ class Wallibe(discord.Client):
     async def send_msg(self, channel:discord.TextChannel, message:str):
         print(f'{TColors.B_SEND}> Sending: {TColors.B_MESSAGE_CONTENT}"{message}"{TColors.RESET}')
         await channel.send(message)
+
+    async def log_cost(self, cost:float):
+        cost_channel:discord.TextChannel = self.get_channel(COST_CHANNEL_ID)
+        if (cost > CababasAI.RECOMMENDED_COST):
+            await cost_channel.send(f'`WARNING: COST OVER RECOMMENDED ${CababasAI.RECOMMENDED_COST} AMOUNT: CHARGED ${cost}')
 
     async def log_error(self, channel:discord.TextChannel, error:str):
         await self.log_error_silent(error)
