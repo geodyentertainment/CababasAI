@@ -17,7 +17,7 @@ ORGANIZATION_ID = os.environ.get('OPENAI_WYU2_ORGANIZATION_ID')
 PRESET_PATH = "Resources/Preset.txt"
 HISTORY_PATH = "Resources/History.json"
 
-RATE_LIMIT = 4
+RATE_LIMIT = 5
 LAST_REQ = time.time()
 
 enabled = False
@@ -55,8 +55,8 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     messages.append({"role":"system","content":PRESET_FILE.read()})
     PRESET_FILE.close()
     
-    while (len(history) > 20):
-        history.pop(0)
+    while (len(messages) > 30):
+        messages.pop(0)
 
     # Add prompt to history
     formatted_prompt = {"role":"user","content":content}
@@ -66,9 +66,9 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     chat_completion = AI_Client.chat.completions.create(
         messages=messages,
         model=MODEL,
-        max_tokens=20,
+        max_tokens=40,
         seed=0,
-        temperature=1,
+        temperature=0.5,
         logit_bias={"1734": -100}
     )
     response = chat_completion.choices[0].message.content
@@ -83,9 +83,12 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
         return "That is not allowed :("
 
     elif (finish_reason == 'length'):
-        response = response + "... *yawn* -_-"
+        response = response + " ... *yawn*"
 
     # Add response to history
+    while (len(history) > 2000):
+        history.pop(0)
+        
     history.append(formatted_prompt)
     history.append({"role":"assistant","content": response})
 
