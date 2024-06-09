@@ -19,7 +19,7 @@ HISTORY_PATH = "Resources/History.json"
 
 RATE_LIMIT = 5
 RECOMMENDED_COST = 0.0025
-MAX_CONTENT_SIZE = 100
+MAX_CONTENT_SIZE = 200
 LAST_REQ = time.time()
 
 enabled = False
@@ -44,13 +44,16 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     global MAX_CONTENT_SIZE
 
     if not enabled and not ignore_flag:
-        return "sowy wallibe says no ai rn ):"
+        print(f'{TColors.RED}AI is disabled.{TColors.RESET}')
+        return "sowy wallibe says no ai rn ):", 0.0
     
     if current_time-LAST_REQ < RATE_LIMIT:
-        return random.choice(FACES)
+        print(f'{TColors.RED}User was rate limited.{TColors.RESET}')
+        return random.choice(FACES), 0.0
     
-    if (len(content) >= MAX_CONTENT_SIZE):
-        return "i not reading allat " + random.choice(FACES)
+    if len(content) >= MAX_CONTENT_SIZE:
+        print(f'{TColors.RED}Content exeeds max content cap.{TColors.RESET}')
+        return "i not reading allat " + random.choice(FACES), 0.0
 
     PRESET_FILE = open(PRESET_PATH, "r")
     messages = []
@@ -89,7 +92,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     print(f'{TColors.B_FINISH_REASON}> Finish reason: {finish_reason}{TColors.RESET}')
 
     if (finish_reason == 'content_filter'): # Make sure content filter wasn't triggered
-        return "That is not allowed :("
+        return "That is not allowed :(", cost
 
     elif (finish_reason == 'length'):
         response = response + " ... *yawn*"

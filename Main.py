@@ -166,7 +166,7 @@ class Wallibe(discord.Client):
         except openai.OpenAIError as e2:
             await self.log_error(channel, f'An OpenAIError occurred: {str(e2)}')
         except Exception as e3:
-            await self.log_error(channel, f'An error occurred: {str(e3)}')
+            await self.log_error(channel, f'A python error occurred while generating a response: {str(e3)}')
 
     # Function for sending messages alone
     async def send_msg(self, channel:discord.TextChannel, message:str):
