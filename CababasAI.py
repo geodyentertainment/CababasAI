@@ -11,8 +11,8 @@ MODEL = "ft:gpt-3.5-turbo-0125:wyu2:cameluo-cababas:9YCcnkvC"
 API_KEY = os.environ.get('OPENAI_CABABAS_API_KEY')
 PROJECT_ID = os.environ.get('OPENAI_CABABAS_PROJECT_ID')
 ORGANIZATION_ID = os.environ.get('OPENAI_WYU2_ORGANIZATION_ID')
-PRESET_PATH = "src/Preset.txt"
-HISTORY_PATH = "src/History.json"
+PRESET_PATH = "Resources\\Preset.txt"
+HISTORY_PATH = "Resources\\History.json"
 
 RATE_LIMIT = 4
 LAST_REQ = time.time()
