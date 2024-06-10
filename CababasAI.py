@@ -9,14 +9,13 @@ from PrintColors import TColors
 
 # load_dotenv()
 
-MODEL = "ft:gpt-3.5-turbo-0125:wyu2:cameluo-cababas:9YCcnkvC"
+MODEL = os.environ.get('OPENAI_CABABAS_MODEL')
 API_KEY = os.environ.get('OPENAI_CABABAS_API_KEY')
 PROJECT_ID = os.environ.get('OPENAI_CABABAS_PROJECT_ID')
 ORGANIZATION_ID = os.environ.get('OPENAI_WYU2_ORGANIZATION_ID')
 PRESET_PATH = "Resources/Preset.txt"
 HISTORY_PATH = "Resources/History.json"
-FINETUNING_PATH = "Resources/FineTUning.jsonl"
-FINETUNING_HISTORY_PATH = "Resources\FineTuningHistory.json"
+FINETUNING_PATH = "Resources/FineTuning.jsonl"
 
 FINE_TUNING = False
 
@@ -63,9 +62,6 @@ def process_response_ai_flag(name:str, content:str, ignore_flag:bool) -> tuple[s
     messages = []
 
     # Add all previous history to messages
-    with open(FINETUNING_HISTORY_PATH, "w") as fine_tuning_history:
-        fine_tuning_history.write("")
-
     if not FINE_TUNING:
         for m in history:
             messages.append(m)
@@ -87,7 +83,7 @@ def process_response_ai_flag(name:str, content:str, ignore_flag:bool) -> tuple[s
         messages=messages,
         model=MODEL,
         max_tokens=40,
-        seed=0,
+        seed=572875094,
         temperature=1.1,
         logit_bias={"1734": -100}
     )
