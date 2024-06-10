@@ -143,20 +143,20 @@ class Wallibe(discord.Client):
                 for c in WHITELISTED_CHANNELS:
                     if channel.id == WHITELISTED_CHANNELS[c]:
                         print(f'{TColors.B_SUCCESS}> Channel is whitelisted for AI use!{TColors.RESET}')
-                        await self.response_ai(channel, content.removeprefix(COMMANDS["TALK"] + " "))
+                        await self.response_ai(channel, sender.name, content.removeprefix(COMMANDS["TALK"] + " "))
                         break
 
                 # self.processing_message = False
 
             print("> \n")
 
-    async def response_ai(self, channel:discord.TextChannel, content:str):
+    async def response_ai(self, channel:discord.TextChannel, name:str, content:str):
         try:
             async with channel.typing():
                 if (channel.id == WHITELISTED_CHANNELS["PRIVATETEST"]):
-                    response, cost = CababasAI.process_response_ai_flag(content, True)
+                    response, cost = CababasAI.process_response_ai_flag(name, content, True)
                 else:
-                    response, cost = CababasAI.process_response_ai(content)
+                    response, cost = CababasAI.process_response_ai(name, content)
 
             await self.send_msg(channel, response)
             await self.log_cost(cost)

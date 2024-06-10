@@ -22,6 +22,8 @@ RECOMMENDED_COST = 0.0025
 MAX_CONTENT_SIZE = 200
 LAST_REQ = time.time()
 
+history = []
+
 enabled = False
 
 AI_Client = OpenAI(
@@ -30,10 +32,10 @@ AI_Client = OpenAI(
     organization=ORGANIZATION_ID
 )
 
-def process_response_ai(content:str):
-    return process_response_ai_flag(content, False)
+def process_response_ai(name:str, content:str):
+    return process_response_ai_flag(name, content, False)
 
-def process_response_ai_flag(content:str, ignore_flag:bool):
+def process_response_ai_flag(name:str, content:str, ignore_flag:bool):
     current_time = time.time()
 
     global LAST_REQ
@@ -61,7 +63,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
     # Add all previous history to messages
     for m in history:
         messages.append(m)
-    messages.append({"role":"system","content":PRESET_FILE.read()})
+    messages.append({"role":"system","content":PRESET_FILE.read()+" You are talking to "+name})
     PRESET_FILE.close()
     
     while (len(messages) > 30):
@@ -77,7 +79,7 @@ def process_response_ai_flag(content:str, ignore_flag:bool):
         model=MODEL,
         max_tokens=40,
         seed=0,
-        temperature=0.5,
+        temperature=1,
         logit_bias={"1734": -100}
     )
     response = chat_completion.choices[0].message.content
