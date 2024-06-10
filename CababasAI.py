@@ -10,12 +10,15 @@ from PrintColors import TColors
 # load_dotenv()
 
 MODEL = "ft:gpt-3.5-turbo-0125:wyu2:cameluo-cababas:9YCcnkvC"
-# MODEL = "gpt-3.5-turbo"
 API_KEY = os.environ.get('OPENAI_CABABAS_API_KEY')
 PROJECT_ID = os.environ.get('OPENAI_CABABAS_PROJECT_ID')
 ORGANIZATION_ID = os.environ.get('OPENAI_WYU2_ORGANIZATION_ID')
 PRESET_PATH = "Resources/Preset.txt"
 HISTORY_PATH = "Resources/History.json"
+FINETUNING_PATH = "Resources/FineTUning.jsonl"
+FINETUNING_HISTORY_PATH = "Resources\FineTuningHistory.json"
+
+FINE_TUNING = False
 
 RATE_LIMIT = 5
 RECOMMENDED_COST = 0.0025
@@ -35,7 +38,7 @@ AI_Client = OpenAI(
 def process_response_ai(name:str, content:str):
     return process_response_ai_flag(name, content, False)
 
-def process_response_ai_flag(name:str, content:str, ignore_flag:bool):
+def process_response_ai_flag(name:str, content:str, ignore_flag:bool) -> tuple[str, float]:
     current_time = time.time()
 
     global LAST_REQ
@@ -57,15 +60,21 @@ def process_response_ai_flag(name:str, content:str, ignore_flag:bool):
         print(f'{TColors.RED}Content exeeds max content cap.{TColors.RESET}')
         return "i not reading allat " + random.choice(FACES), 0.0
 
-    PRESET_FILE = open(PRESET_PATH, "r")
     messages = []
 
     # Add all previous history to messages
-    for m in history:
-        messages.append(m)
-    messages.append({"role":"system","content":PRESET_FILE.read()+" You are talking to "+name})
-    PRESET_FILE.close()
-    
+    with open(FINETUNING_HISTORY_PATH, "w") as fine_tuning_history:
+        fine_tuning_history.write("")
+
+    if not FINE_TUNING:
+        for m in history:
+            messages.append(m)
+
+    with open(PRESET_PATH, "r") as PRESET_FILE:
+
+        preset_content = PRESET_FILE.read().replace("\n", " ")
+        messages.append({"role":"system","content": preset_content+" You are talking to "+name})    
+
     while (len(messages) > 30):
         messages.pop(0)
 
@@ -79,15 +88,16 @@ def process_response_ai_flag(name:str, content:str, ignore_flag:bool):
         model=MODEL,
         max_tokens=40,
         seed=0,
-        temperature=1,
+        temperature=1.1,
         logit_bias={"1734": -100}
     )
-    response = chat_completion.choices[0].message.content
+    response:str = chat_completion.choices[0].message.content
 
     finish_reason = chat_completion.choices[0].finish_reason
 
     cost:float = (prompt_token_pricing(chat_completion.usage.prompt_tokens) + completion_token_pricing(chat_completion.usage.completion_tokens))
 
+    # print(f'{TColors.B_FINISH_REASON}> Seed {chat_completion.}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Prompt tokens: {chat_completion.usage.prompt_tokens}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Completion tokens: {chat_completion.usage.completion_tokens}{TColors.RESET}')
     print(f'{TColors.B_FINISH_REASON}> Cost of generation: {TColors.RED}${cost}{TColors.RESET}')
@@ -100,39 +110,64 @@ def process_response_ai_flag(name:str, content:str, ignore_flag:bool):
         response = response + " ... *yawn*"
 
     # Add response to history
-    while (len(history) > 2000):
-        history.pop(0)
-        
-    history.append(formatted_prompt)
-    history.append({"role":"assistant","content": response})
+    if FINE_TUNING:
+        save_to_finetuning(to_finetuning_line(preset_content, content, response))
+        response += " (fine tuning)"
+    else:
+        while (len(history) > 2000):
+            history.pop(0)
+            
+        history.append(formatted_prompt)
+        history.append({"role":"assistant","content": response})
 
-    saveHistory()
+        saveHistory()
 
     LAST_REQ = current_time
     return response, cost
 
-def saveHistory():
+def saveHistory() -> None:
     global history
 
-    SAVE_FILE = open(HISTORY_PATH, "w")
-    SAVE_FILE.write(json.dumps(history))
-    SAVE_FILE.close()
+    with open(HISTORY_PATH, "w") as SAVE_FILE:
+        SAVE_FILE.write(json.dumps(history))
 
-def loadHistory():
+def loadHistory() -> None:
     global history
 
-    HISTORY_FILE = open(HISTORY_PATH, "r")
-    history = json.loads(HISTORY_FILE.read())
-    print(f'{TColors.B_SUCCESS}Loaded: {history}{TColors.RESET}')
-    HISTORY_FILE.close()
+    with open(HISTORY_PATH, "r", encoding='utf-8') as HISTORY_FILE:
+        history = json.loads(HISTORY_FILE.read())
+        print(f'{TColors.B_SUCCESS}Loaded: {history}{TColors.RESET}')
 
-def clearHistory():
+def get_fine_tuning_history():
+    FINETUNING_HISTORY_PATH = open(FINETUNING_HISTORY_PATH, "r")
+    return json.loads(FINETUNING_HISTORY_PATH.read())
+
+def to_finetuning_line(sys:str, prompt:str, response:str) -> str:
+    try:
+        n_sys = sys.replace("\n", " ").replace('"', '\\"')
+        n_prompt = prompt.replace("\n", " ").replace('"', '\\"')
+        n_response = response.replace("\n", " ").replace('"', '\\"')
+
+        line = (f'{{"messages":[{{"role":"system","content":"{n_sys}"}},{{"role":"user","content":"{n_prompt}"}},{{"role":"assistant","content":"{n_response}"}}]}}')
+        return line
+    except Exception as e:
+        print(f'{TColors.RED}Could not create fine tuning model line:{str(e)}{TColors.RESET}')
+        return str(e)
+
+def save_to_finetuning(line:str) -> None:
+    with open(FINETUNING_PATH, "a",encoding='utf-8') as finetuning_file:
+        try:
+            finetuning_file.write("\n"+line)
+        except Exception as e:
+            print(f'{TColors.RED}Could not append to fine tuning file: {str(e)}{TColors.RESET}')
+
+def clearHistory() -> None:
     global history
 
     history.clear()
     
-def prompt_token_pricing(t):
+def prompt_token_pricing(t) -> float:
     return (t/1000000.0)*3
 
-def completion_token_pricing(t):
+def completion_token_pricing(t) -> float:
     return (t/1000000.0)*6

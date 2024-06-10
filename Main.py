@@ -3,6 +3,7 @@ import openai
 import time
 import CababasAI
 from PrintColors import TColors
+from discord import app_commands
 # from dotenv import load_dotenv
 
 # load_dotenv()
@@ -29,9 +30,11 @@ MODERATORS = {
     "WALLIBE" : 1164735044200435734
 }
 BOT_ID = 1249083390980915201
+TEST_BOT_ID = 1249635973453709372
 ERRORS_CHANNEL_ID = 1249121134398668951
 COST_CHANNEL_ID = 1249480355690319894
 BACKUP_CHANNEL_ID = 1249484273916837889
+PERMISSION = 414464677952
 
 ## Code
 class Wallibe(discord.Client):
@@ -72,85 +75,87 @@ class Wallibe(discord.Client):
         if (not message.guild):
             return
 
-        if sender.id != BOT_ID: # Make sure sender isn't the bot itself
-            print(f'{TColors.B_RECEIVE}> Message from {TColors.B_USER}{sender}{TColors.B_RECEIVE}: {TColors.B_MESSAGE_CONTENT}"{content}"{TColors.RESET}')
+        if sender.id == BOT_ID or sender.id == TEST_BOT_ID: # Make sure sender isn't the bot itself
+            return
 
-            if content.startswith(COMMANDS["TEST"]):
-                sendContent:str = "This is a test!"
+        print(f'{TColors.B_RECEIVE}> Message from {TColors.B_USER}{sender}{TColors.B_RECEIVE}: {TColors.B_MESSAGE_CONTENT}"{content}"{TColors.RESET}')
 
-                await self.send_msg(channel, sendContent)  
-            elif content.startswith(COMMANDS["SYSTEMCONFIG"]):
-                if (await self.is_mod(sender.id)):
-                    print(f'> {sender} is accessing System Config command.')
+        if content.startswith(COMMANDS["TEST"]):
+            sendContent:str = "This is a test!"
+
+            await self.send_msg(channel, sendContent)  
+        elif content.startswith(COMMANDS["SYSTEMCONFIG"]):
+            if (await self.is_mod(sender.id)):
+                print(f'> {sender} is accessing System Config command.')
+                try:
+                    config = content.removeprefix(COMMANDS["SYSTEMCONFIG"] + " ")
+                    CababasAI.history.append({"role": "system","content": config})
+                    print(f'{TColors.B_SUCCESS}> Successfulyl appended system: {TColors.B_MESSAGE_CONTENT}"{config}"{TColors.RESET}')
+                    await self.send_msg(channel, f'i will remember: {config}')
+                except Exception as e:
+                    await self.log_error("An error occurred while adding system configuration: " + str(e))
+
+        elif content.startswith(COMMANDS["TOGGLE_AI"]):
+            if (await self.is_mod(sender.id)):
+                print(f'> {sender} is accessing AI Toggle command.')
+                CababasAI.enabled = not CababasAI.enabled
+
+                if (CababasAI.enabled):
+                    await self.send_msg(channel, f'ai enabled :3')
                     try:
-                        config = content.removeprefix(COMMANDS["SYSTEMCONFIG"] + " ")
-                        CababasAI.history.append({"role": "system","content": config})
-                        print(f'{TColors.B_SUCCESS}> Successfulyl appended system: {TColors.B_MESSAGE_CONTENT}"{config}"{TColors.RESET}')
-                        await self.send_msg(channel, f'i will remember: {config}')
+                        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="\"cab\""), status=discord.Status.dnd)
+                        print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
                     except Exception as e:
-                        await self.log_error("An error occurred while adding system configuration: " + str(e))
-
-            elif content.startswith(COMMANDS["TOGGLE_AI"]):
-                if (await self.is_mod(sender.id)):
-                    print(f'> {sender} is accessing AI Toggle command.')
-                    CababasAI.enabled = not CababasAI.enabled
-
-                    if (CababasAI.enabled):
-                        await self.send_msg(channel, f'ai enabled :3')
-                        try:
-                            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name="\"cab\""), status=discord.Status.dnd)
-                            print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
-                        except Exception as e:
-                            await self.log_error_silent("Could not set Discord activity: " + str(e))
-                    else:
-                        try:
-                            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="AI disabled :("), status=discord.Status.do_not_disturb)
-                            print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
-                        except Exception as e:
-                            await self.log_error_silent("Could not set Discord activity: " + str(e))
-                        await self.send_msg(channel, f'ai disabled :3')
-
-            elif content.startswith(COMMANDS["GET_HISTORY"]):
-                if (await self.is_mod(sender.id)):
-                    print(f'> {sender} is accessing view history command.')
+                        await self.log_error_silent("Could not set Discord activity: " + str(e))
+                else:
                     try:
-                        dm:discord.DMChannel = await sender.create_dm()
-
-                        await dm.send("```\nHistory Backup " + ctime + "\n```", file=discord.File(open(CababasAI.HISTORY_PATH, "rb"), "historybackup"+ctime+".json"))
-                    
-                        await self.backup_history(ctime, sender)
-
+                        await self.change_presence(activity=discord.Activity(type=discord.ActivityType.playing, name="AI disabled :("), status=discord.Status.do_not_disturb)
+                        print(f'{TColors.B_SUCCESS}> Set activity.{TColors.RESET}')
                     except Exception as e:
-                        await self.log_error(channel, "Error while sending AI history: " + str(e))
+                        await self.log_error_silent("Could not set Discord activity: " + str(e))
+                    await self.send_msg(channel, f'ai disabled :3')
 
-            elif content.startswith(COMMANDS["FLASH_HISTORY"]):
-                if (await self.is_mod(sender.id)):
-                    print(f'> {sender} is accessing flash history command.')
+        elif content.startswith(COMMANDS["GET_HISTORY"]):
+            if (await self.is_mod(sender.id)):
+                print(f'> {sender} is accessing view history command.')
+                try:
+                    dm:discord.DMChannel = await sender.create_dm()
 
-                    try:
-                        await self.backup_history(ctime, sender)
-                        CababasAI.clearHistory()
-                        CababasAI.saveHistory()
-                        await self.send_msg(channel, f'Memory flashed :3')
-                    except Exception as e:
-                        await self.log_error(channel, "Error while flashing AI history: " + str(e))
+                    await dm.send("```\nHistory Backup " + ctime + "\n```", file=discord.File(open(CababasAI.HISTORY_PATH, "rb"), "historybackup"+ctime+".json"))
+                
+                    await self.backup_history(ctime, sender)
 
-            elif content.startswith(COMMANDS["TALK"] + " "):
-                # if self.processing_message:
-                #     return
-                # self.processing_message = True
+                except Exception as e:
+                    await self.log_error(channel, "Error while sending AI history: " + str(e))
 
-                for c in WHITELISTED_CHANNELS:
-                    if channel.id == WHITELISTED_CHANNELS[c]:
-                        print(f'{TColors.B_SUCCESS}> Channel is whitelisted for AI use!{TColors.RESET}')
-                        await self.response_ai(channel, sender.name, content.removeprefix(COMMANDS["TALK"] + " "))
-                        break
+        elif content.startswith(COMMANDS["FLASH_HISTORY"]):
+            if (await self.is_mod(sender.id)):
+                print(f'> {sender} is accessing flash history command.')
 
-                # self.processing_message = False
+                try:
+                    await self.backup_history(ctime, sender)
+                    CababasAI.clearHistory()
+                    CababasAI.saveHistory()
+                    await self.send_msg(channel, f'Memory flashed :3')
+                except Exception as e:
+                    await self.log_error(channel, "Error while flashing AI history: " + str(e))
 
-            print("> \n")
+        elif content.startswith(COMMANDS["TALK"] + " "):
+            # if self.processing_message:
+            #     return
+            # self.processing_message = True
 
-    async def response_ai(self, channel:discord.TextChannel, name:str, content:str):
+            for c in WHITELISTED_CHANNELS:
+                if channel.id == WHITELISTED_CHANNELS[c]:
+                    print(f'{TColors.B_SUCCESS}> Channel is whitelisted for AI use!{TColors.RESET}')
+                    await self.response_ai(channel, sender.name, content.removeprefix(COMMANDS["TALK"] + " "))
+                    break
+
+            # self.processing_message = False
+
+        print("> \n")
+
+    async def response_ai(self, channel:discord.TextChannel, name:str, content:str) -> None:
         try:
             async with channel.typing():
                 if (channel.id == WHITELISTED_CHANNELS["PRIVATETEST"]):
@@ -169,39 +174,44 @@ class Wallibe(discord.Client):
             await self.log_error(channel, f'A python error occurred while generating a response: {str(e3)}')
 
     # Function for sending messages alone
-    async def send_msg(self, channel:discord.TextChannel, message:str):
+    async def send_msg(self, channel:discord.TextChannel, message:str) -> None:
         print(f'{TColors.B_SEND}> Sending: {TColors.B_MESSAGE_CONTENT}"{message}"{TColors.RESET}')
         await channel.send(message)
 
-    async def backup_history(self, ctime, sender):
+    async def backup_history(self, ctime, sender) -> None:
         backup_channel:discord.TextChannel = self.get_channel(BACKUP_CHANNEL_ID)
         await backup_channel.send("```\nHistory Backup " + ctime + " requested by "+sender.name+"\n```", file=discord.File(open(CababasAI.HISTORY_PATH, "rb"), "historybackup"+ctime+".json"))
 
-    async def log_cost(self, cost:float):
+    async def log_cost(self, cost:float) -> None:
         cost_channel:discord.TextChannel = self.get_channel(COST_CHANNEL_ID)
         if (cost > CababasAI.RECOMMENDED_COST):
             await cost_channel.send(f'`WARNING: COST OVER RECOMMENDED ${CababasAI.RECOMMENDED_COST} AMOUNT: CHARGED ${cost}')
 
-    async def log_error(self, channel:discord.TextChannel, error:str):
+    async def log_error(self, channel:discord.TextChannel, error:str) -> None:
         await self.log_error_silent(error)
         await self.send_msg(channel, "`erm tell wallibe to check logs :3`")
 
-    async def log_error_silent(self, error:str):
+    async def log_error_silent(self, error:str) -> None:
         error_channel:discord.TextChannel = self.get_channel(ERRORS_CHANNEL_ID)
         print(f'{TColors.B_WARNING}> Error: {TColors.B_MESSAGE_CONTENT}"\n{error}\n"{TColors.RESET}')
         await error_channel.send("```\n" + error + "\n```")
 
-    async def is_mod(self, user_id:int):
+    async def is_mod(self, user_id:int) -> bool:
         for mod in MODERATORS:
             if user_id == MODERATORS[mod]:
                 return True
         return False
 
-
-# Bot startup
+# Client creation
 intents = discord.Intents.default()
 intents.reactions = True
 intents.message_content = True
 
 client = Wallibe(intents=intents)
+
+# App commands
+tree = app_commands.CommandTree(client=client)
+
+
+# Bot startup
 client.run(TOKEN)
