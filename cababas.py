@@ -13,6 +13,7 @@ class CababasBot(discord.Client):
         cons.task(f'Initiating bot...')
         # Setting ready flag to false
         self.ready = False
+        self.enabled = True
 
         # Creating intents
         intents = discord.Intents.default()
@@ -26,13 +27,35 @@ class CababasBot(discord.Client):
         # Create command tree (for slash commands)
         self.tree = discord.app_commands.CommandTree(self)
         @self.tree.command(
-            name="terminate",
-            description="Terminate the bot. Only selected users are allowed to use this.",
+            name="enable",
+            description="Enable the bot's commands GLOBALLY. Only selected users can use this.",
             guilds=self.get_whitelisted_guilds()
         )
-        async def stop_command(interaction:discord.Interaction):
-            await interaction.response.send_message(content='Terminating process.')
-            await self.stop()
+        async def enable_commands(interaction:discord.Interaction):
+            if not self.ready: return
+
+            if await os_manager.resources.settings.is_manager(interaction.user.id):
+                self.enabled = True
+                await interaction.response.send_message(content='commands enable :3',delete_after=3.0)
+                return
+            
+            await interaction.response.send_message(content='u cant use dis :(',delete_after=3.0)
+
+        @self.tree.command(
+            name="disable",
+            description="Disable the bot's commands GLOBALLY. Only selected users can use this.",
+            guilds=self.get_whitelisted_guilds()
+        )
+        async def disable_commands(interaction:discord.Interaction):
+            if not self.ready: return
+
+            if await os_manager.resources.settings.is_manager(interaction.user.id):
+                self.enabled = False
+                await interaction.response.send_message(content='commands disable :3', delete_after=3.0)
+                return
+
+            await interaction.response.send_message(content='u cant use dis :(', delete_after=3.0)
+
         cons.log(f'Command tree created.')
         
     # Bot is online
@@ -71,6 +94,11 @@ class CababasBot(discord.Client):
         sender = message.author
         channel = message.channel
         is_dm = (message.guild == None)
+
+        if message.clean_content.startswith('cab'):
+            if not self.enabled:
+                message.reply('sowwy :( commands disable rn',delete_after=5.0)
+            return
 
     # Stop the bot
     async def stop(self) -> None:
