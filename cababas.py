@@ -1,13 +1,14 @@
-from typing import Any
 import discord
-from time import sleep
+from discord import app_commands
+from typing import Any
 
 import console as cons
 import os_manager
 
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
-    tree:discord.app_commands.CommandTree # The command tree
+    enable:bool
+    tree:app_commands.CommandTree # The command tree
 
     def __init__(self, **options: Any) -> None:
         cons.task(f'Initiating bot...')
@@ -25,36 +26,9 @@ class CababasBot(discord.Client):
 
         cons.task(f'Creating tree...')
         # Create command tree (for slash commands)
-        self.tree = discord.app_commands.CommandTree(self)
-        @self.tree.command(
-            name="enable",
-            description="Enable the bot's commands GLOBALLY. Only selected users can use this.",
-            guilds=self.get_whitelisted_guilds()
-        )
-        async def enable_commands(interaction:discord.Interaction):
-            if not self.ready: return
+        self.tree = app_commands.CommandTree(self)
 
-            if await os_manager.resources.settings.is_manager(interaction.user.id):
-                self.enabled = True
-                await interaction.response.send_message(content='commands enable :3',delete_after=3.0)
-                return
-            
-            await interaction.response.send_message(content='u cant use dis :(',delete_after=3.0)
-
-        @self.tree.command(
-            name="disable",
-            description="Disable the bot's commands GLOBALLY. Only selected users can use this.",
-            guilds=self.get_whitelisted_guilds()
-        )
-        async def disable_commands(interaction:discord.Interaction):
-            if not self.ready: return
-
-            if await os_manager.resources.settings.is_manager(interaction.user.id):
-                self.enabled = False
-                await interaction.response.send_message(content='commands disable :3', delete_after=3.0)
-                return
-
-            await interaction.response.send_message(content='u cant use dis :(', delete_after=3.0)
+        self.create_slash_commands()
 
         cons.log(f'Command tree created.')
         
@@ -75,7 +49,8 @@ class CababasBot(discord.Client):
         # Syncing slash commands
         cons.task(f'Syncing the command tree...')
         try:
-            await self.tree.sync(guild=discord.Object(id=1249087176592068659))
+            for guild in self.get_whitelisted_guilds():
+                await self.tree.sync(guild=guild)
             cons.task_completed(f'Command tree synced to {str(len(os_manager.WHITELISTED_GUILDS))} guild(s).')
         except Exception as e:
             cons.error(f'An error occurred while syncing app commands: {str(e)}.')
@@ -99,6 +74,29 @@ class CababasBot(discord.Client):
             if not self.enabled:
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
             return
+        
+    def create_slash_commands(self) -> None:
+        @self.tree.command(
+                name='toggle-commands',
+                description='Toggle commands on/off GLOBALLY.',
+                guilds=self.get_whitelisted_guilds(),
+                extras={
+                    'on':True,
+                    'off':False
+                }
+        )
+        async def toggle_commands(interaction:discord.Interaction, choice:bool):
+            if not self.ready:
+                await interaction.response.send_message('Bot is not ready yet.', ephemeral=True)
+                return
+
+            if await os_manager.resources.settings.is_manager(interaction.user.id):
+                self.enabled = choice
+
+                cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands" with a status of {str(choice)}')
+                await interaction.response.send_message(f'Command status is now [{choice}]', ephemeral=True)
+            else:
+                await interaction.response.send_message('You do not have permission to use this command.', ephemeral=True)
 
     # Stop the bot
     async def stop(self) -> None:
