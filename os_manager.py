@@ -65,14 +65,17 @@ class resources:
         @staticmethod
         async def get_settings() -> dict[str, any]:
             self = resources.settings
-            self.update_settings() # Make sure settings are updated
+            await self.update_settings() # Make sure settings are updated
 
             with open(resources.SETTINGS_PATH, 'r',encoding='utf-8') as settings_file: # Open file
                 return loads(settings_file.read()) # Read file, load, and return value
             
         @staticmethod
-        async def get_managers() -> dict[str, int]:
-            return await resources.settings.get_settings()["discord"]["managers"]
+        async def is_manager(user_id:int) -> bool:
+            saved:dict[str, any] = await resources.settings.get_settings()
+            managers:dict[str, int] = saved["discord"]["managers"]
+
+            return user_id in managers.values() # Check if the user ID is found in the managers file
 
     class history:
         DEFAULT:list[dict[str, str]] = []
@@ -99,7 +102,7 @@ class resources:
         @staticmethod
         async def get_history(guild_id:int) -> list[dict[str, str]]:
             self = resources.history
-            self.update_histories() # Make sure histories are updated
+            await self.update_histories() # Make sure histories are updated
 
             file_path:str = self.id_to_history_path(guild_id)
 
@@ -132,4 +135,4 @@ class resources:
         await self.history.update_histories()
 
         # Update the fine tuning file
-        await self.finetuning.update_fine_tune()       
+        await self.finetuning.update_fine_tune()
