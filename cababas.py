@@ -97,7 +97,7 @@ class CababasBot(discord.Client):
 
         if message.clean_content.startswith('cab'):
             if not self.enabled:
-                message.reply('sowwy :( commands disable rn',delete_after=5.0)
+                await message.reply('sowwy :( commands disable rn',delete_after=5.0)
             return
 
     # Stop the bot
