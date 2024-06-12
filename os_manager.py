@@ -26,7 +26,7 @@ class resources:
     FOLDER_PATH:str = 'resources'
     HISTORIES_PATH:str = f'{FOLDER_PATH}/histories'
     SETTINGS_PATH:str = f'{FOLDER_PATH}/Settings.json'
-    SYSTEM_PATH:str = f'{FOLDER_PATH}/System.txt'
+    SYSTEM_PATH:str = f'{FOLDER_PATH}/System'
     FINE_TUNE_PATH:str = f'{FOLDER_PATH}/FineTuning.jsonl'
 
     class settings:
@@ -120,6 +120,21 @@ class resources:
             if not path.exists(self.FINE_TUNE_PATH):
                 open(self.FINE_TUNE_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
 
+    class system:
+        @staticmethod
+        async def update_system() -> None:
+            self = resources
+            # Check if system file exists
+            if not path.exists(self.SYSTEM_PATH):
+                open(self.SYSTEM_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
+
+        @staticmethod
+        async def get_system() -> str:
+            self = resources
+            await self.system.update_system() # Make sure file is updated
+            with open(self.SYSTEM_PATH, 'r', encoding='utf-8') as system_file:
+                return system_file.read()
+
     # Check and create missing resource files (including the directory itself)
     @staticmethod
     async def update_files() -> None:
@@ -136,3 +151,6 @@ class resources:
 
         # Update the fine tuning file
         await self.finetuning.update_fine_tune()
+
+        # Update the system file
+        await self.system.update_system()
