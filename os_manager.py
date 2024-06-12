@@ -24,10 +24,15 @@ class environment:
 class resources:
     ## Constants
     FOLDER_PATH:str = 'resources'
-    HISTORIES_PATH:str = f'{FOLDER_PATH}/histories'
+    AI_PATH:str = f'{FOLDER_PATH}/ai'
+    RNG_PATH:str = f'{FOLDER_PATH}/rng'
     SETTINGS_PATH:str = f'{FOLDER_PATH}/Settings.json'
-    SYSTEM_PATH:str = f'{FOLDER_PATH}/System'
-    FINE_TUNE_PATH:str = f'{FOLDER_PATH}/FineTuning.jsonl'
+
+    AI_HISTORIES_PATH:str = f'{AI_PATH}/histories'
+    AI_SYSTEM_PATH:str = f'{AI_PATH}/System'
+    AI_FINE_TUNE_PATH:str = f'{AI_PATH}/FineTuning.jsonl'
+
+    RNG_RANKS_PATH:str = f'{RNG_PATH}/Ranks.json'
 
     class settings:
         DEFAULT:dict[str, dict[str, any]] = {
@@ -77,16 +82,16 @@ class resources:
 
             return user_id in managers.values() # Check if the user ID is found in the managers file
 
-    class history:
+    class ai_history:
         DEFAULT:list[dict[str, str]] = []
 
         @staticmethod
         async def update_histories() -> None:
-            self = resources.history
+            self = resources.ai_history
 
             # Create history folder if it doesn't exist
-            if not path.exists(resources.HISTORIES_PATH):
-                mkdir(resources.HISTORIES_PATH)
+            if not path.exists(resources.AI_HISTORIES_PATH):
+                mkdir(resources.AI_HISTORIES_PATH)
 
             # Iterate through each whitelisted guild ID
             for guild_id in WHITELISTED_GUILDS.values():
@@ -97,11 +102,11 @@ class resources:
 
         @staticmethod
         def id_to_history_path(guild_id:int) -> str:
-            return f'{resources.HISTORIES_PATH}/history-{str(guild_id)}.json'
+            return f'{resources.AI_HISTORIES_PATH}/history-{str(guild_id)}.json'
             
         @staticmethod
         async def get_history(guild_id:int) -> list[dict[str, str]]:
-            self = resources.history
+            self = resources.ai_history
             await self.update_histories() # Make sure histories are updated
 
             file_path:str = self.id_to_history_path(guild_id)
@@ -109,48 +114,98 @@ class resources:
             if not path.exists(file_path): # In case the ID was invalid, meaning no file exists
                 return self.DEFAULT # If so, return default empty history
 
-            with open(self.id_to_history_path(guild_id), 'r',encoding='utf-8') as settings_file: # Open file
-                return loads(settings_file.read()) # Read file, load, and return value
+            with open(self.id_to_history_path(guild_id), 'r',encoding='utf-8') as history_file: # Open file
+                return loads(history_file.read()) # Read file, load, and return value
             
-    class finetuning:
+    class ai_finetuning:
         @staticmethod
         async def update_fine_tune() -> None:
             self = resources
             # Check if fine tuning file exists
-            if not path.exists(self.FINE_TUNE_PATH):
-                open(self.FINE_TUNE_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
+            if not path.exists(self.AI_FINE_TUNE_PATH):
+                open(self.AI_FINE_TUNE_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
 
-    class system:
+    class ai_system:
         @staticmethod
         async def update_system() -> None:
             self = resources
             # Check if system file exists
-            if not path.exists(self.SYSTEM_PATH):
-                open(self.SYSTEM_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
+            if not path.exists(self.AI_SYSTEM_PATH):
+                open(self.AI_SYSTEM_PATH, 'x',encoding='utf-8').close() # Create file if it doesnt exist
 
         @staticmethod
         async def get_system() -> str:
             self = resources
-            await self.system.update_system() # Make sure file is updated
-            with open(self.SYSTEM_PATH, 'r', encoding='utf-8') as system_file:
+            await self.ai_system.update_system() # Make sure file is updated
+            with open(self.AI_SYSTEM_PATH, 'r', encoding='utf-8') as system_file:
                 return system_file.read()
+            
+    class rng_ranks:
+        DEFAULT:dict[str, str] = {}
+
+        @staticmethod
+        async def update_ranks() -> None:
+            self = resources
+            # Check if system file exists
+            if not path.exists(self.RNG_RANKS_PATH):
+                with open(self.RNG_RANKS_PATH, 'x',encoding='utf-8') as file: # Create file if it doesnt exist
+                    file.write(dumps(self.rng_ranks.DEFAULT,indent=True))
+
+        @staticmethod
+        async def get_ranks() -> dict[str, str]:
+            self = resources
+            await self.rng_ranks.update_ranks() # Make sure ranks are updated
+            with open(self.RNG_RANKS_PATH, 'r',encoding='utf-8') as file: # Open file
+                return loads(file.read()) # Read file, load, and return value
+
+        @staticmethod
+        async def get_rank(user_id:int) -> str | None:
+            ranks = await resources.rng_ranks.get_ranks()
+
+            if str(user_id) in ranks:
+                return ranks[str(user_id)]
+            
+            return None
+        
+        @staticmethod
+        async def set_rank(user_id:int, rank:str) -> None:
+            self = resources.rng_ranks
+            await self.update_ranks() # Make sure ranks are updated
+            with open(resources.RNG_RANKS_PATH, 'r',encoding='utf-8') as file: # Open file
+                ranks = loads(file.read()) # Read file, load, and return value
+            
+            ranks[str(user_id)] = rank
+
+            with open(resources.RNG_RANKS_PATH, 'w',encoding='utf-8') as file: # Open file
+                file.write(dumps(ranks,indent=True))
+            
+
 
     # Check and create missing resource files (including the directory itself)
     @staticmethod
     async def update_files() -> None:
         self = resources
-        # Update folder
+        # Update folders
         if not path.exists(self.FOLDER_PATH):
             mkdir(self.FOLDER_PATH)
+
+        if not path.exists(self.AI_PATH):
+            mkdir(self.AI_PATH)
+
+        if not path.exists(self.RNG_PATH):
+            mkdir(self.RNG_PATH)
 
         # Update settings
         await self.settings.update_settings()
 
-        # Update history
-        await self.history.update_histories()
+        # Update ai history
+        await self.ai_history.update_histories()
 
-        # Update the fine tuning file
-        await self.finetuning.update_fine_tune()
+        # Update the ai fine tuning file
+        await self.ai_finetuning.update_fine_tune()
 
-        # Update the system file
-        await self.system.update_system()
+        # Update the ai system file
+        await self.ai_system.update_system()
+
+        # Update the RNG ranks file
+        await self.rng_ranks.update_ranks()

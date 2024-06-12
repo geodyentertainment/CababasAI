@@ -4,11 +4,13 @@ from typing import Any
 
 import console as cons
 import os_manager
+import rng
 
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
     enable:bool
     tree:app_commands.CommandTree # The command tree
+    debounce = []
 
     def __init__(self, **options: Any) -> None:
         cons.task(f'Initiating bot...')
@@ -87,8 +89,13 @@ class CababasBot(discord.Client):
         )
         async def toggle_commands(interaction:discord.Interaction, choice:bool):
             if not self.ready:
-                await interaction.response.send_message('Bot is not ready yet.', ephemeral=True)
+                await interaction.response.send_message('hold on pls', ephemeral=True)
                 return
+            
+            if interaction.user.id in self.debounce:
+                await interaction.response.send_message('u alweady running command', ephemeral=True, delete_after=5.0)
+                return
+            self.debounce.append(interaction.user.id)
 
             if await os_manager.resources.settings.is_manager(interaction.user.id):
                 self.enabled = choice
@@ -97,6 +104,104 @@ class CababasBot(discord.Client):
                 await interaction.response.send_message(f'Command status is now [{choice}]', ephemeral=True)
             else:
                 await interaction.response.send_message('You do not have permission to use this command.', ephemeral=True)
+            self.debounce.remove(interaction.user.id)
+
+        @self.tree.command(
+                name='rng',
+                description='Randomly roll a rank.',
+                guilds=self.get_whitelisted_guilds()
+        )
+        async def rng_command(interaction:discord.Interaction):
+            if not self.ready:
+                await interaction.response.send_message('hold on pls', ephemeral=True)
+                return
+            
+            if not self.enabled:
+                await interaction.response.send_message('sowwy dev say no command rn :(', ephemeral=True)
+                return
+            
+            if interaction.user.id in self.debounce:
+                await interaction.response.send_message('u alweady running command', ephemeral=True, delete_after=5.0)
+                return
+            self.debounce.append(interaction.user.id)
+            
+            user = interaction.user
+
+            try:
+                current_roll, is_new_rank = await rng.user_roll(user.id)
+            except Exception as e:
+                await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
+                cons.error(f'Error while {user.name} ({user.id}) was rolling RNG: {str(e)}')
+                self.debounce.remove(user.id)
+                return
+            
+            try:
+                if is_new_rank:
+                    await interaction.response.send_message(f'✨ WOWIE :D ✨ u roll new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
+                    self.debounce.remove(user.id)
+                    return
+                await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=20.0)  
+            except discord.HTTPException as e:
+                cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
+            self.debounce.remove(user.id)
+
+        @self.tree.command(
+                name='rng-view-rank',
+                description='View your current rank.',
+                guilds=self.get_whitelisted_guilds()
+        )
+        async def rng_view_rank(interaction:discord.Interaction):
+            if not self.ready:
+                await interaction.response.send_message('hold on pls', ephemeral=True, delete_after=10.0)
+                return
+            
+            if not self.enabled:
+                await interaction.response.send_message('sowwy dev say no command rn :(', ephemeral=True, delete_after=10.0)
+                return
+            
+            if interaction.user.id in self.debounce:
+                await interaction.response.send_message('u alweady running command', ephemeral=True, delete_after=10.0)
+                return
+            self.debounce.append(interaction.user.id)
+            
+            user = interaction.user
+
+            try:
+                rank = await rng.get_user_rank(user.id)
+                await interaction.response.send_message(f'ur rank is `{rank}` ({str(round(rng.get_chance(rank)*100, 2))}%)', ephemeral=True)    
+            except Exception as e:
+                await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
+                cons.error(f'Error while sending {user.name} ({user.id}) their RNG rank: {str(e)}')
+            self.debounce.remove(user.id)
+            
+        @self.tree.command(
+                name='rng-ranks-list',
+                description='View all the aquireable ranks and their chances of being rolled.',
+                guilds=self.get_whitelisted_guilds()
+        )
+        async def rng_browse_ranks(interaction:discord.Interaction):
+            if not self.ready:
+                await interaction.response.send_message('hold on pls', ephemeral=True, delete_after=10.0)
+                return
+            
+            if not self.enabled:
+                await interaction.response.send_message('sowwy dev say no command rn :(', ephemeral=True, delete_after=10.0)
+                return
+            
+            if interaction.user.id in self.debounce:
+                await interaction.response.send_message('u alweady running command', ephemeral=True, delete_after=10.0)
+                return
+            self.debounce.append(interaction.user.id)
+            
+            user = interaction.user
+
+            try:
+                embed = await rng.browse_ranks(user.id)
+                await interaction.response.send_message(embed=embed,ephemeral=True)    
+            except Exception as e:
+                await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
+                cons.error(f'Error while {user.name} ({user.id}) was browsing RNG ranks: {str(e)}')
+            self.debounce.remove(user.id)
 
     # Stop the bot
     async def stop(self) -> None:
