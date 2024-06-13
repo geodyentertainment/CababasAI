@@ -5,6 +5,7 @@ from discord import Color
 
 history:dict[str, int] = {} # For debouncing n stuff
 
+# Stole these names from random roblox game (Sol's RNG)
 RANKS = {
     'Common': 1/2, # It says 1/2, but it's really awarded when user lands on nothing
     'Uncommon': 1/4,
