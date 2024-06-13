@@ -37,14 +37,89 @@ class resources:
     class settings:
         DEFAULT:dict[str, dict[str, any]] = {
             'discord' : {
-                'whitelisted_channels' : {},
                 'managers' : {
                     'Geody' : 775117392644407296,
                     'Wallibe' : 1164735044200435734
                 }
+            },
+            'ai_settings' : {
+                'enabled' : False,
+                'encoding_model' : 'gpt-3.5-turbo',
+                'history_memory' : 10,
+                'temperature' : 1,
+                'top_p' : 1,
+                'logit_bias' : {'1734': -100},
+                'seed' : 572875094,
+                'get_max_prompt_tokens' : 100,
+                'max_completion_tokens' : 20,
+                'frequency_penalty' : 0,
+                'presence_penalty' : 0
             }
         }
+                
+        class discord:
+            @staticmethod
+            async def is_manager(user_id:int) -> bool:
+                saved:dict[str, any] = await resources.settings.get_settings()
+                managers:dict[str, int] = saved["discord"]["managers"]
 
+                return user_id in managers.values() # Check if the user ID is found in the managers file
+            
+        class ai_settings:
+            @staticmethod
+            async def get_ai_settings() -> dict[str, any]:
+                saved:dict[str, any] = await resources.settings.get_settings()   
+                return saved['ai_settings']             
+            
+            async def is_enabled() -> bool:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['enabled']
+            
+            async def set_enabled(flag:bool) -> None:
+                current_settings = await resources.settings.get_settings()
+                current_settings['ai_settings']['enabled'] = flag
+                await resources.settings.set_settings(current_settings)
+                
+            async def get_encoding_model() -> str:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['encoding_model']
+            
+            async def get_temperature() -> float:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['temperature']
+            
+            async def get_top_p() -> float:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['top_p']
+            
+            async def get_logit_bias() -> dict[str, int]:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['logit_bias']
+            
+            async def get_seed() -> int:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['seed']
+            
+            async def get_max_prompt_tokens() -> int:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['get_max_prompt_tokens']
+            
+            async def get_max_completion_tokens() -> int:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['max_completion_tokens']
+            
+            async def get_frequency_penalty() -> float:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['frequency_penalty']
+            
+            async def get_presence_penalty() -> float:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['presence_penalty']
+            
+            async def get_history_memory() -> int:
+                self = resources.settings.ai_settings
+                return await self.get_ai_settings()['history_memory']
+                
         @staticmethod
         async def update_settings() -> None:
             self = resources.settings
@@ -76,11 +151,15 @@ class resources:
                 return loads(settings_file.read()) # Read file, load, and return value
             
         @staticmethod
-        async def is_manager(user_id:int) -> bool:
-            saved:dict[str, any] = await resources.settings.get_settings()
-            managers:dict[str, int] = saved["discord"]["managers"]
-
-            return user_id in managers.values() # Check if the user ID is found in the managers file
+        async def set_settings(new_settings:dict[str, any]) -> None:
+            self = resources.settings
+            await self.update_settings() # Make sure settings are updated
+            
+            updated = self.DEFAULT.copy()
+            updated.update(new_settings)
+            
+            with open(resources.SETTINGS_PATH, 'w',encoding='utf-8') as settings_file: # Open file
+                settings_file.write(updated)
 
     class ai_history:
         DEFAULT:list[dict[str, str]] = []
@@ -112,7 +191,7 @@ class resources:
             file_path:str = self.id_to_history_path(guild_id)
 
             if not path.exists(file_path): # In case the ID was invalid, meaning no file exists
-                return self.DEFAULT # If so, return default empty history
+                return self.DEFAULT.copy() # If so, return default empty history
 
             with open(self.id_to_history_path(guild_id), 'r',encoding='utf-8') as history_file: # Open file
                 return loads(history_file.read()) # Read file, load, and return value

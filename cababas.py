@@ -97,7 +97,7 @@ class CababasBot(discord.Client):
                 return
             self.debounce.append(interaction.user.id)
 
-            if await os_manager.resources.settings.is_manager(interaction.user.id):
+            if await os_manager.resources.settings.discord.is_manager(interaction.user.id):
                 self.enabled = choice
 
                 cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands" with a status of {str(choice)}')
