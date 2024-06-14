@@ -17,7 +17,7 @@ class environment:
     OPENAI_API:str = environ.get('OPENAI_CABABAS_API_KEY', 'unknown') # The API key to access OpenAI's API
     OPENAI_PROJ:str = environ.get('OPENAI_CABABAS_PROJECT', 'unknown') # The project ID
     OPENAI_ORG:str = environ.get('OPENAI_CABABAS_ORGANIZATION', 'unknown') # The organization ID
-    OPENAI_MOD:str = environ.get('OPENAI_CABABAS_MODEL', 'unknown') # The model ID
+    OPENAI_MOD:str = environ.get('OPENAI_CABABAS_MODEL', 'gpt-3.5-turbo') # The model ID
 
     DISCORD_TOK:str = environ.get('DISCORD_CABABAS_TOKEN', 'unknown') # The discord bot token
 
@@ -181,7 +181,7 @@ class resources:
                 file_path:str = self.id_to_history_path(guild_id) # Get the path to the save file
                 if not path.exists(file_path): # Check if the file exists
                     with open(file_path, 'x',encoding='utf-8') as history_file: # Create new file if it doesn't exist
-                        history_file.write(dumps(obj=self.DEFAULT,indent=True))
+                        history_file.write(dumps(self.DEFAULT,indent=True))
 
         @staticmethod
         def id_to_history_path(guild_id:int) -> str:
@@ -199,6 +199,26 @@ class resources:
 
             with open(self.id_to_history_path(guild_id), 'r',encoding='utf-8') as history_file: # Open file
                 return loads(history_file.read()) # Read file, load, and return value
+            
+        async def add_history(guild_id:int, prompt:dict[str,str], completion:dict[str,str]) -> None:
+            self = resources.ai_history
+            await self.update_histories() # Make sure histories are updated
+            
+            file_path:str = self.id_to_history_path(guild_id)
+            
+            if not path.exists(file_path): # In case the ID was invalid, meaning no file exists
+                return
+            
+            with open(file_path,'r',encoding='utf-8') as history_file: # Create new file if it doesn't exist
+                saved_history:list[dict[str,str]] = loads(history_file.read())
+            saved_history.append(prompt)
+            saved_history.append(completion)
+            
+            while len(saved_history) > 2000:
+                saved_history.pop(0)
+            
+            with open(file_path,'w',encoding='utf-8') as history_file:
+                history_file.write(dumps(saved_history,indent=True))
             
     class ai_finetuning:
         @staticmethod

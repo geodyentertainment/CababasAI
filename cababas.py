@@ -1,10 +1,12 @@
 import discord
 from discord import app_commands
 from typing import Any
+from random import choice
 
 import console as cons
 import os_manager
 import rng
+import faces
 from ai import generate_response
 
 class CababasBot(discord.Client):
@@ -75,7 +77,7 @@ class CababasBot(discord.Client):
         content = message.clean_content
         guild = message.guild
 
-        if content.startswith('cab'):
+        if content.startswith('cab '):
             if is_dm:
                 await message.reply('sowwy :( no dms pls',delete_after=5.0)
                 return
@@ -83,9 +85,14 @@ class CababasBot(discord.Client):
             if not self.enabled:
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 return
+            
+            actual_content = content.replace('cab ', '')
+
+            if len(actual_content) <= 0:
+                await message.reply(choice(faces.CONFUSED),mention_author=False)
         
             async with channel.typing():
-                response, is_success = await generate_response(content, sender, guild.id)
+                response, is_success = await generate_response(actual_content, sender, guild.id)
             
                 if is_success:
                     await message.reply(response,mention_author=False)

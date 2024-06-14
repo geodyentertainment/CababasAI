@@ -4,13 +4,13 @@ from openai import OpenAI
 from random import choice
 
 import console
-import os_manager
 from os_manager import resources
 from os_manager import environment
 import token_calculator
 import faces
 
 ROLE_USER = 'user'
+ROLE_ASSIST = 'assistant'
 ROLE_SYSTEM = 'system'
 
 ai_settings = resources.settings.ai_settings
@@ -24,6 +24,7 @@ client = OpenAI(
 # Get a response based on the prompt. Returns the output message, and a flag determining if the process was a success.
 async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, bool]:
     console.line()
+    
     console.task(f'Checking AI flags...')
     if not await resources.settings.ai_settings.is_enabled():
         console.error(f'AI flag is set to false.')
@@ -37,14 +38,14 @@ async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, b
         return f'i not weading alat {choice(faces.CONFUSED)}', True
     console.task_completed(f'Prompt token amount does not exceed the token cap.')
     
-    console.task(f'Creating useable history...')
+    console.task(f'Creating useable prompt history...')
     prompts = await create_prompt_history(prompt, user, guild_id)
-    console.task_completed(f'History created.           ')
+    console.task_completed(f'Prompt history created with {str(len(prompts))} messages.')
 
     console.task(f'Generating chat completion...')
     chat_completion = await create_chat_completion(prompts)
     
-    console.task_completed(f'Chat completion successfully created.')
+    console.task_completed(f'Chat completion successfully created:')
     finish_reason:str = chat_completion.choices[0].finish_reason
     response:str = chat_completion.choices[0].message.content
     used_tokens = chat_completion.usage
@@ -53,17 +54,22 @@ async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, b
     output_cost = token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)
     total_cost = input_cost + output_cost
     
-    console.log(f'Response: {response}')
-    console.log(f'Finish reason: {finish_reason}')
-    console.log(f'Prompt tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(input_cost)})')
-    console.log(f'Completion tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(output_cost)})')
-    console.log(f'Total tokens: {used_tokens.total_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(total_cost)})')
-    console.line()
+    console.log(f' - Prompt: "{prompt}"')
+    console.log(f' - Response: "{response}"')
+    console.log(f' - Finish reason: "{finish_reason}"')
+    console.log(f' - Prompt tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(input_cost)}{console.Colors.L_LOG})')
+    console.log(f' - Completion tokens: {used_tokens.completion_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(output_cost)}{console.Colors.L_LOG})')
+    console.log(f' - Total tokens: {used_tokens.total_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(total_cost)}{console.Colors.L_LOG})')
     
+    console.task(f'Appending chats to history...')
+    await resources.ai_history.add_history(guild_id,create_message(ROLE_USER,prompt),create_message(ROLE_ASSIST,response))
+    console.task_completed(f'Chats appended to history.     ')
+    
+    console.line()
     return response, True
     
-async def create_message(role:str, content:str) -> dict[str, str]:
-    return {'role':role,'content':content}
+def create_message(role:str, content:str) -> dict[str, str]:
+    return {'role':role,'content':content.strip().replace('\n', ' ')}
     
 async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dict[str, str]]:
     history:list[dict[str, str]] = await resources.ai_history.get_history(guild_id)
@@ -73,7 +79,8 @@ async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dic
             result.insert(0, list(reversed(history))[i])
         else:
             break
-    result.append(dict(await create_message(ROLE_USER,prompt)))
+    result.append(dict(create_message(ROLE_USER,prompt)))
+    result.append(dict(create_message(ROLE_SYSTEM,str(await resources.ai_system.get_system()))))
     return result
     
 async def create_chat_completion(prompts:list[dict[str, str]]):
