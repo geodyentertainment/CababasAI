@@ -49,11 +49,15 @@ async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, b
     response:str = chat_completion.choices[0].message.content
     used_tokens = chat_completion.usage
     
+    input_cost = token_calculator.input_tokens_to_cost(used_tokens.prompt_tokens)
+    output_cost = token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)
+    total_cost = input_cost + output_cost
+    
     console.log(f'Response: {response}')
     console.log(f'Finish reason: {finish_reason}')
-    console.log(f'Prompt tokens: {used_tokens.prompt_tokens} (${token_calculator.input_tokens_to_cost(used_tokens.prompt_tokens)})')
-    console.log(f'Completion tokens: {used_tokens.prompt_tokens} (${token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)})')
-    console.log(f'Total tokens: {used_tokens.total_tokens} (${token_calculator.tokens_to_cost(used_tokens.prompt_tokens, used_tokens.completion_tokens)})')
+    console.log(f'Prompt tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(input_cost)})')
+    console.log(f'Completion tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(output_cost)})')
+    console.log(f'Total tokens: {used_tokens.total_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(total_cost)})')
     console.line()
     
     return response, True

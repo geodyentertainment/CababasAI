@@ -84,9 +84,13 @@ class CababasBot(discord.Client):
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 return
         
-            response, is_success = await generate_response(content, sender, guild.id)
+            async with channel.typing():
+                response, is_success = await generate_response(content, sender, guild.id)
             
-            await message.reply(response)
+                if is_success:
+                    await message.reply(response,mention_author=False)
+                else:
+                    await message.reply(response,mention_author=False,delete_after=10.0)    
             return
         
     def create_slash_commands(self) -> None:

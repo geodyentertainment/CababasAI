@@ -23,6 +23,7 @@ class Colors:
     L_LOG = LIGHT_GRAY
     L_TASK = YELLOW
     L_TASK_COMPLETED = WHITE
+    L_CHARGE = BRIGHT_RED
 
 def line() -> None:
     print('')
