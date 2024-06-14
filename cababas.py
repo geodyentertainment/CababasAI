@@ -153,7 +153,7 @@ class CababasBot(discord.Client):
             
             try:
                 if is_new_rank:
-                    await interaction.response.send_message(f'✨ WOWIE :D ✨ u roll new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
+                    await interaction.response.send_message(f'✨ WOWIE :D ✨ <@{user.id}> rolled new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
                     self.debounce.remove(user.id)
                     return
                 await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=20.0)  
