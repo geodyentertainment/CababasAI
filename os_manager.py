@@ -52,7 +52,7 @@ class resources:
                 },
                 'encoding_model' : 'gpt-3.5-turbo',
                 'history_memory' : 10,
-                'temperature' : 1,
+                'temperature' : 0.75,
                 'top_p' : 1,
                 'logit_bias' : {'1734': -100},
                 'seed' : 572875094,

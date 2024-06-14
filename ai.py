@@ -24,6 +24,8 @@ client = OpenAI(
 
 request_queue:dict[str, list[dict[str, any]]] = {}
 
+ignore_in_history = ['<:cababas:1245178570335322132>']
+
 # Get a response based on the prompt. Returns the output message, and a flag determining if the process was a success.
 async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     console.line()
@@ -35,7 +37,7 @@ async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     
     prompt = message.content.replace('cab ', '')
     guild_id = message.guild.id
-    
+        
     console.task(f'Checking AI flags...')
     if not await resources.settings.ai_settings.is_enabled():
         console.error(f'AI flag is set to false.')
@@ -65,6 +67,11 @@ async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     output_cost = token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)
     total_cost = input_cost + output_cost
     
+    if finish_reason == 'content_filter':
+        response = f'u no allowed to say dat {choice(faces.SAD)}'
+    elif finish_reason == 'length':
+        response = f'{response} ... *yawn*'
+    
     console.log(f' - Prompt: "{prompt}" from {user.name} ({user.id}) in {guild_id}')
     console.log(f' - Response: "{response}"')
     console.log(f' - Finish reason: "{finish_reason}"')
@@ -85,13 +92,19 @@ def create_message(role:str, content:str) -> dict[str, str]:
 async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dict[str, str]]:
     history:list[dict[str, str]] = await resources.ai_history.get_history(guild_id)
     result:list[dict[str, str]]  = []
+    
+    reversed_history = list(reversed(history))
+    
     for i in range(0, int(await resources.settings.ai_settings.get_history_memory())-1):
         if len(history) >= i+1:
-            result.insert(0, list(reversed(history))[i])
+            for blacklisted_item in ignore_in_history:
+                reversed_history[i]['content'] = reversed_history[i]['content'].replace(blacklisted_item, '')
+            result.insert(0, reversed_history[i])
         else:
             break
     result.append(dict(create_message(ROLE_USER,prompt)))
     result.append(dict(create_message(ROLE_SYSTEM,str(await resources.ai_system.get_system()))))
+    print(result)
     return result
 
 async def add_queue(prompt:str, user:User, guild_id:int) -> None:

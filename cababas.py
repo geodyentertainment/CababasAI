@@ -148,7 +148,7 @@ class CababasBot(discord.Client):
         
         self.debounce.append(sender.id)
 
-        if content.startswith('cab '):
+        if content.lower().startswith('cab '):
             if is_dm:
                 await message.reply('sowwy :( no dms pls',delete_after=5.0)
                 self.debounce.remove(sender.id)
