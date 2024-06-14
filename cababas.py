@@ -262,11 +262,7 @@ class CababasBot(discord.Client):
     async def command_rng(self, interaction:discord.Interaction) -> None:
         if not await self.check_flags(interaction,False): return
             
-        view = ui.View()
-        try:
-            view.add_item(rng_reroll_button(self))
-        except TypeError as e:
-            cons.error(f'An error occured while adding button to roll request: {str(e)}')
+        view = rng_roll_view(client=self)
                 
         self.debounce.append(interaction.user.id)
         
@@ -286,7 +282,7 @@ class CababasBot(discord.Client):
                 await interaction.response.send_message(ephemeral=True,delete_after=10.0,view=view) 
                 self.debounce.remove(user.id)
                 return
-            roll_message = await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=10.0,view=view)  
+            await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=10.0,view=view)  
         except discord.HTTPException as e:
             cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
         self.debounce.remove(user.id)
@@ -337,11 +333,15 @@ class CababasBot(discord.Client):
             result.append(discord.Object(id=id))
         return result
     
-class rng_reroll_button(ui.Button):
-        def __init__(self,client:CababasBot):
-            super().__init__(label=f're-roll {choice(faces.HAPPY)}',style=discord.ButtonStyle.blurple)
-            self.client = client
+class rng_roll_view(ui.View):
+    def __init__(self,client:CababasBot, *, timeout: float | None = 180):
+        super().__init__(timeout=timeout)
+        self.client = client
             
-        async def callback(self, interaction: discord.Interaction):
-            # Rerun the command
-            await self.client.command_rng(interaction)
+    @ui.button(label=f're-roll {choice(faces.HAPPY)}',style=discord.ButtonStyle.blurple)
+    async def button_callback(self,interaction:discord.Interaction,button:ui.Button):
+        # button.disabled = True
+        # button.style = discord.ButtonStyle.gray
+        # button.label = "Expired"
+        # await interaction.response.edit_message(view=self)
+        await self.client.command_rng(interaction)
