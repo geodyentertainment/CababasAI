@@ -5,6 +5,7 @@ from discord import Activity
 from discord import ActivityType
 from discord import Status
 from discord import User
+from discord import ui
 from typing import Any
 from random import choice
 
@@ -214,28 +215,7 @@ class CababasBot(discord.Client):
                 guilds=self.get_whitelisted_guilds()
         )
         async def rng_command(interaction:discord.Interaction):
-            if not await self.check_flags(interaction,False): return
-            self.debounce.append(interaction.user.id)
-            
-            user = interaction.user
-
-            try:
-                current_roll, is_new_rank = await rng.user_roll(user.id)
-            except Exception as e:
-                await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
-                cons.error(f'Error while {user.name} ({user.id}) was rolling RNG: {str(e)}')
-                self.debounce.remove(user.id)
-                return
-            
-            try:
-                if is_new_rank:
-                    await interaction.response.send_message(f'✨ WOWIE :D ✨ <@{user.id}> rolled new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
-                    self.debounce.remove(user.id)
-                    return
-                await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=20.0)  
-            except discord.HTTPException as e:
-                cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
-            self.debounce.remove(user.id)
+            await self.command_rng(interaction=interaction)
 
         @self.tree.command(
                 name='rng-view-rank',
@@ -278,6 +258,38 @@ class CababasBot(discord.Client):
                 await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while {user.name} ({user.id}) was browsing RNG ranks: {str(e)}')
             self.debounce.remove(user.id)
+            
+    async def command_rng(self, interaction:discord.Interaction) -> None:
+        if not await self.check_flags(interaction,False): return
+            
+        view = ui.View()
+        try:
+            view.add_item(rng_reroll_button(self))
+        except TypeError as e:
+            cons.error(f'An error occured while adding button to roll request: {str(e)}')
+                
+        self.debounce.append(interaction.user.id)
+        
+        user = interaction.user
+
+        try:
+            current_roll, is_new_rank = await rng.user_roll(user.id)
+        except Exception as e:
+            await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
+            cons.error(f'Error while {user.name} ({user.id}) was rolling RNG: {str(e)}')
+            self.debounce.remove(user.id)
+            return
+        
+        try:
+            if is_new_rank:
+                await interaction.channel.send(f'✨ WOWIE {choice(faces.HAPPY)} ✨ <@{user.id}> rolled new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
+                await interaction.response.send_message(ephemeral=True,delete_after=10.0,view=view) 
+                self.debounce.remove(user.id)
+                return
+            roll_message = await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=10.0,view=view)  
+        except discord.HTTPException as e:
+            cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
+        self.debounce.remove(user.id)
 
     # Stop the bot
     async def stop(self) -> None:
@@ -324,3 +336,12 @@ class CababasBot(discord.Client):
         for id in os_manager.WHITELISTED_GUILDS.values():
             result.append(discord.Object(id=id))
         return result
+    
+class rng_reroll_button(ui.Button):
+        def __init__(self,client:CababasBot):
+            super().__init__(label=f're-roll {choice(faces.HAPPY)}',style=discord.ButtonStyle.blurple)
+            self.client = client
+            
+        async def callback(self, interaction: discord.Interaction):
+            # Rerun the command
+            await self.client.command_rng(interaction)
