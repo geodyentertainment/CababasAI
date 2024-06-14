@@ -126,7 +126,6 @@ class CababasBot(discord.Client):
             cons.error(f'An error occurred while syncing app commands: {str(e)}. Bot will continue to run.')
         
         self.ready = True
-        cons.line()
         cons.success(f'Successfully set up the server. Bot is ready for use.')
         
         # Cycling through random presences
@@ -142,7 +141,6 @@ class CababasBot(discord.Client):
         channel = message.channel
         is_dm = (message.guild == None)
         content = message.clean_content
-        guild = message.guild
         
         if sender.id in self.debounce:
             await message.reply(f'u alweady running command {choice(faces.CONFUSED)}',delete_after=5.0)
@@ -160,14 +158,9 @@ class CababasBot(discord.Client):
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 self.debounce.remove(sender.id)
                 return
-            
-            actual_content = content.replace('cab ', '')
-
-            if len(actual_content) <= 0:
-                await message.reply(choice(faces.CONFUSED),mention_author=False)
-        
+                    
             async with channel.typing():
-                response, is_success = await generate_response(actual_content, sender, guild.id)
+                response, is_success = await generate_response(sender, message)
             
                 if is_success:
                     await message.reply(response,mention_author=False)

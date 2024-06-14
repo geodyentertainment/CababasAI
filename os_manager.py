@@ -45,6 +45,11 @@ class resources:
             },
             'ai_settings' : {
                 'enabled' : False,
+                'whitelisted_channels' : {
+                    'worship' : 1234653607295455343,
+                    'testing' : 1249693861115334678,
+                    'private_testing' : 1249174901412200538
+                },
                 'encoding_model' : 'gpt-3.5-turbo',
                 'history_memory' : 10,
                 'temperature' : 1,
@@ -75,6 +80,10 @@ class resources:
             async def is_enabled() -> bool:
                 self = resources.settings.ai_settings
                 return dict(await self.get_ai_settings())['enabled']
+            
+            async def get_whitelisted_channels() -> dict[str, int]:
+                self = resources.settings.ai_settings
+                return dict(await self.get_ai_settings())['whitelisted_channels']
             
             async def set_enabled(flag:bool) -> None:
                 current_settings = await resources.settings.get_settings()

@@ -1,5 +1,6 @@
 import openai
 from discord import User
+from discord import Message
 from openai import OpenAI
 from random import choice
 
@@ -24,8 +25,16 @@ client = OpenAI(
 request_queue:dict[str, list[dict[str, any]]] = {}
 
 # Get a response based on the prompt. Returns the output message, and a flag determining if the process was a success.
-async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, bool]:
+async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     console.line()
+    
+    whitelisted_channels = await resources.settings.ai_settings.get_whitelisted_channels()
+    
+    if message.channel.id not in whitelisted_channels.values():
+        return f'sowwy no use dat here {choice(faces.SAD)}', False
+    
+    prompt = message.content.replace('cab ', '')
+    guild_id = message.guild.id
     
     console.task(f'Checking AI flags...')
     if not await resources.settings.ai_settings.is_enabled():
@@ -56,7 +65,7 @@ async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, b
     output_cost = token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)
     total_cost = input_cost + output_cost
     
-    console.log(f' - Prompt: "{prompt}"')
+    console.log(f' - Prompt: "{prompt}" from {user.name} ({user.id}) in {guild_id}')
     console.log(f' - Response: "{response}"')
     console.log(f' - Finish reason: "{finish_reason}"')
     console.log(f' - Prompt tokens: {used_tokens.prompt_tokens} ({console.Colors.L_CHARGE}${token_calculator.to_string(input_cost)}{console.Colors.L_LOG})')
