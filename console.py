@@ -26,7 +26,7 @@ class Colors:
     L_CHARGE = BRIGHT_RED
 
 def line() -> None:
-    print('')
+    print('\n')
 
 def log(message:str) -> None:
     print(f'{Colors.WHITE}> {message}{Colors.RESET}')
