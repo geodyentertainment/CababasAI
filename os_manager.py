@@ -53,7 +53,8 @@ class resources:
                 'get_max_prompt_tokens' : 100,
                 'max_completion_tokens' : 20,
                 'frequency_penalty' : 0,
-                'presence_penalty' : 0
+                'presence_penalty' : 0,
+                'test' : 10
             }
         }
                 
@@ -137,8 +138,9 @@ class resources:
                 if not isinstance(saved, dict): # File was invalid...
                     settings_file.write(dumps(obj=self.DEFAULT,indent=True))
                     return
-                updated = self.DEFAULT.copy()
-                updated.update(saved)
+                
+                updated = saved.copy()
+                updated.update(self.DEFAULT)
 
                 settings_file.write(dumps(obj=updated,indent=True))
 
