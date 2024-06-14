@@ -144,6 +144,9 @@ class CababasBot(discord.Client):
         is_dm = (message.guild == None)
         content = message.clean_content
         
+        if sender.id == self.user.id:
+            return
+        
         if sender.id in self.debounce:
             await message.reply(f'u alweady running command {choice(faces.CONFUSED)}',delete_after=5.0)
             return
@@ -160,7 +163,7 @@ class CababasBot(discord.Client):
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 self.debounce.remove(sender.id)
                 return
-                    
+
             async with channel.typing():
                 response, is_success = await generate_response(sender, message)
             

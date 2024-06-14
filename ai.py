@@ -103,8 +103,9 @@ async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dic
         else:
             break
     result.append(dict(create_message(ROLE_USER,prompt)))
-    result.append(dict(create_message(ROLE_SYSTEM,str(await resources.ai_system.get_system()))))
-    print(result)
+    result.append(dict(create_message(ROLE_SYSTEM,
+        f'{str(await resources.ai_system.get_system())} You are talking to {user.name}.'                                  
+    )))
     return result
 
 async def add_queue(prompt:str, user:User, guild_id:int) -> None:
