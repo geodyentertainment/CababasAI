@@ -4,6 +4,7 @@ from discord import app_commands
 from discord import Activity
 from discord import ActivityType
 from discord import Status
+from discord import User
 from typing import Any
 from random import choice
 
@@ -239,21 +240,25 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='rng-view-rank',
                 description='View your current rank.',
-                guilds=self.get_whitelisted_guilds()
+                guilds=self.get_whitelisted_guilds(),
+                extras={
+                    'user'
+                }
         )
-        async def rng_view_rank(interaction:discord.Interaction):
+        async def rng_view_rank(interaction:discord.Interaction, user:User|None):
             if not await self.check_flags(interaction,False): return
             self.debounce.append(interaction.user.id)
             
-            user = interaction.user
+            if user == None:
+                user = interaction.user
 
             try:
                 rank = await rng.get_user_rank(user.id)
-                await interaction.response.send_message(f'ur rank is `{rank}` ({str(round(rng.get_chance(rank)*100, 2))}%)', ephemeral=True)    
+                await interaction.response.send_message(f'<@{user.id}> rank is `{rank}` ({str(round(rng.get_chance(rank)*100, 2))}%)', ephemeral=True,silent=True)    
             except Exception as e:
-                await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
+                await interaction.response.send_message(f'someting go wrong {choice(faces.SAD)} pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while sending {user.name} ({user.id}) their RNG rank: {str(e)}')
-            self.debounce.remove(user.id)
+            self.debounce.remove(interaction.user.id)
             
         @self.tree.command(
                 name='rng-ranks-list',
