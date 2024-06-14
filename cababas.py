@@ -1,5 +1,9 @@
 import discord
+import asyncio
 from discord import app_commands
+from discord import Activity
+from discord import ActivityType
+from discord import Status
 from typing import Any
 from random import choice
 
@@ -8,6 +12,29 @@ import os_manager
 import rng
 import faces
 from ai import generate_response
+
+DISCORD_STATUS = [
+    Status.online,
+    Status.dnd,
+    Status.idle
+]
+DISCORD_ACTIVITY_NAMES = [
+    'Eating Simulator',
+    'Food',
+    'CS',
+    'Discord',
+    'Roblox',
+    'YouTube',
+    'Spotify',
+    'Math Department'
+]
+
+DISCORD_ACTIVITY_TYPES = [
+    ActivityType.listening,
+    ActivityType.playing,
+    ActivityType.streaming,
+    ActivityType.watching
+]
 
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
@@ -41,6 +68,9 @@ class CababasBot(discord.Client):
     async def on_ready(self):
         cons.success(f'Logged in as {self.user}.\n')
         # Creating any possible missing files
+        
+        await self.change_presence(status=discord.Status.invisible, activity=discord.Activity(name='Loading...',type=discord.ActivityType.playing))
+        
         cons.task(f'Updating resource files...')
         try:
             await os_manager.resources.update_files()
@@ -66,6 +96,11 @@ class CababasBot(discord.Client):
         self.ready = True
         cons.line()
         cons.success(f'Successfully set up the server. Bot is ready for use.')
+        
+        # Cycling through random presences
+        while True:
+            await self.change_presence(status=choice(DISCORD_STATUS), activity=Activity(name=choice(DISCORD_ACTIVITY_NAMES),type=choice(DISCORD_ACTIVITY_TYPES)))
+            await asyncio.sleep(600)
 
     # Received message
     async def on_message(self, message:discord.Message):

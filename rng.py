@@ -51,9 +51,12 @@ async def get_user_rank(user_id:int) -> str:
 async def browse_ranks(user_id:int) -> Embed:
     embed = Embed()
     embed.title = '**RNG RANKS**'
+
+    embed.description = f'ur rank is: `{await get_user_rank(user_id)}`\n'
+    
     for rank in RANKS:
         embed.add_field(
-            name=f'{rank} {'⬅️' if await get_user_rank(user_id) == rank else ''}',
+            name=f'{rank}',
             value=f'{str(round(get_chance(rank)*100, 2))}%',
             inline=False
         )
