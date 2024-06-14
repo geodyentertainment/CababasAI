@@ -53,8 +53,7 @@ class resources:
                 'get_max_prompt_tokens' : 100,
                 'max_completion_tokens' : 20,
                 'frequency_penalty' : 0,
-                'presence_penalty' : 0,
-                'test' : 10
+                'presence_penalty' : 0
             }
         }
                 
@@ -138,9 +137,12 @@ class resources:
                 if not isinstance(saved, dict): # File was invalid...
                     settings_file.write(dumps(obj=self.DEFAULT,indent=True))
                     return
-                
                 updated = saved.copy()
                 updated.update(self.DEFAULT)
+                
+                for category in updated:
+                    if category in saved:
+                        updated[category].update(saved[category])
 
                 settings_file.write(dumps(obj=updated,indent=True))
 
