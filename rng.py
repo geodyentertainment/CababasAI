@@ -70,5 +70,3 @@ async def user_roll(user_id:int) -> tuple[str, bool]:
         return current_roll, True
 
     return current_roll, False
-
-print(sum(RANKS.values()))

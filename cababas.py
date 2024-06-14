@@ -5,6 +5,7 @@ from typing import Any
 import console as cons
 import os_manager
 import rng
+from ai import generate_response
 
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
@@ -71,10 +72,21 @@ class CababasBot(discord.Client):
         sender = message.author
         channel = message.channel
         is_dm = (message.guild == None)
+        content = message.clean_content
+        guild = message.guild
 
-        if message.clean_content.startswith('cab'):
+        if content.startswith('cab'):
+            if is_dm:
+                await message.reply('sowwy :( no dms pls',delete_after=5.0)
+                return
+            
             if not self.enabled:
                 await message.reply('sowwy :( commands disable rn',delete_after=5.0)
+                return
+        
+            response, is_success = await generate_response(content, sender, guild.id)
+            
+            await message.reply(response)
             return
         
     def create_slash_commands(self) -> None:

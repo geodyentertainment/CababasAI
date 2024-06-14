@@ -68,12 +68,12 @@ class resources:
         class ai_settings:
             @staticmethod
             async def get_ai_settings() -> dict[str, any]:
-                saved:dict[str, any] = await resources.settings.get_settings()   
+                saved:dict[str, any] = dict(await resources.settings.get_settings())  
                 return saved['ai_settings']             
             
             async def is_enabled() -> bool:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['enabled']
+                return dict(await self.get_ai_settings())['enabled']
             
             async def set_enabled(flag:bool) -> None:
                 current_settings = await resources.settings.get_settings()
@@ -82,43 +82,43 @@ class resources:
                 
             async def get_encoding_model() -> str:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['encoding_model']
+                return dict(await self.get_ai_settings())['encoding_model']
             
             async def get_temperature() -> float:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['temperature']
+                return dict(await self.get_ai_settings())['temperature']
             
             async def get_top_p() -> float:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['top_p']
+                return dict(await self.get_ai_settings())['top_p']
             
             async def get_logit_bias() -> dict[str, int]:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['logit_bias']
+                return dict(await self.get_ai_settings())['logit_bias']
             
             async def get_seed() -> int:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['seed']
+                return dict(await self.get_ai_settings())['seed']
             
             async def get_max_prompt_tokens() -> int:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['get_max_prompt_tokens']
+                return dict(await self.get_ai_settings())['get_max_prompt_tokens']
             
             async def get_max_completion_tokens() -> int:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['max_completion_tokens']
+                return dict(await self.get_ai_settings())['max_completion_tokens']
             
             async def get_frequency_penalty() -> float:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['frequency_penalty']
+                return dict(await self.get_ai_settings())['frequency_penalty']
             
             async def get_presence_penalty() -> float:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['presence_penalty']
+                return dict(await self.get_ai_settings())['presence_penalty']
             
             async def get_history_memory() -> int:
                 self = resources.settings.ai_settings
-                return await self.get_ai_settings()['history_memory']
+                return dict(await self.get_ai_settings())['history_memory']
                 
         @staticmethod
         async def update_settings() -> None:

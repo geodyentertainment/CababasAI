@@ -11,10 +11,10 @@ async def prompt_to_tokens(prompt:str) -> int:
     return len(tokens)
 
 def input_tokens_to_cost(input_tokens:int) -> float:
-    return (0.0005/1000) * input_tokens
+    return round((0.0005/1000) * input_tokens, 4)
 
 def output_tokens_to_cost(input_tokens:int) -> float:
-    return (0.0015/1000) * input_tokens
+    return round((0.0015/1000) * input_tokens, 4)
 
 def tokens_to_cost(input_tokens:int, output_tokens:int) -> float:
     return input_tokens_to_cost(input_tokens) + output_tokens_to_cost(output_tokens)

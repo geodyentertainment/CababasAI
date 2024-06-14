@@ -22,44 +22,65 @@ client = OpenAI(
 )
 
 # Get a response based on the prompt. Returns the output message, and a flag determining if the process was a success.
-async def get_response(prompt:str, user:User, guild_id:int) -> tuple[str, bool]:
-    console.log(f'Checking response flags: ')
+async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, bool]:
+    console.line()
+    console.task(f'Checking AI flags...')
+    if not await resources.settings.ai_settings.is_enabled():
+        console.error(f'AI flag is set to false.')
+        return f'sowwy wallibe say no ai rn {choice(faces.SAD)}', True
+    console.task_completed(f'AI flag is set to true.')
     
+    console.task(f'Checking prompt tokens...')
     input_tokens = await token_calculator.prompt_to_tokens(prompt)
     if input_tokens > await resources.settings.ai_settings.get_max_prompt_tokens():
-        return f'i not weading alat {choice(faces.SAD)}', False
+        console.error(f'Prompt token amount exceed the cap of {await resources.settings.ai_settings.get_max_prompt_tokens()}')
+        return f'i not weading alat {choice(faces.CONFUSED)}', True
+    console.task_completed(f'Prompt token amount does not exceed the token cap.')
     
+    console.task(f'Creating useable history...')
     prompts = await create_prompt_history(prompt, user, guild_id)
+    console.task_completed(f'History created.           ')
 
-    chat_completion = await create_chat_completion(prompts, user)
+    console.task(f'Generating chat completion...')
+    chat_completion = await create_chat_completion(prompts)
     
-    finish_reason = chat_completion.choices[0].finish_reason
+    console.task_completed(f'Chat completion successfully created.')
+    finish_reason:str = chat_completion.choices[0].finish_reason
     response:str = chat_completion.choices[0].message.content
     used_tokens = chat_completion.usage
+    
+    console.log(f'Response: {response}')
+    console.log(f'Finish reason: {finish_reason}')
+    console.log(f'Prompt tokens: {used_tokens.prompt_tokens} (${token_calculator.input_tokens_to_cost(used_tokens.prompt_tokens)})')
+    console.log(f'Completion tokens: {used_tokens.prompt_tokens} (${token_calculator.output_tokens_to_cost(used_tokens.completion_tokens)})')
+    console.log(f'Total tokens: {used_tokens.total_tokens} (${token_calculator.tokens_to_cost(used_tokens.prompt_tokens, used_tokens.completion_tokens)})')
+    console.line()
+    
+    return response, True
     
 async def create_message(role:str, content:str) -> dict[str, str]:
     return {'role':role,'content':content}
     
 async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dict[str, str]]:
-    history:list[dict[str, str]] = resources.ai_history.get_history(guild_id)
-    result:list[dict[str, str]]  = {}
-    for i in range(0, resources.settings.ai_settings.get_history_memory()-1):
-        if len(history) >= i:
-            result.insert(0, reversed(history)[i])
+    history:list[dict[str, str]] = await resources.ai_history.get_history(guild_id)
+    result:list[dict[str, str]]  = []
+    for i in range(0, int(await resources.settings.ai_settings.get_history_memory())-1):
+        if len(history) >= i+1:
+            result.insert(0, list(reversed(history))[i])
         else:
             break
-    result.append(create_message(ROLE_USER,prompt))
+    result.append(dict(await create_message(ROLE_USER,prompt)))
+    return result
     
-async def create_chat_completion(prompts:list[dict[str, str]], user:User):
-    return client.completions.create(
+async def create_chat_completion(prompts:list[dict[str, str]]):
+    return client.chat.completions.create(
         model=environment.OPENAI_MOD,
-        user=str(user.id),
-        prompt=prompts,
-        temperature=ai_settings.get_temperature(),
-        top_p=ai_settings.get_top_p(),
-        logit_bias=ai_settings.get_logit_bias(),
-        seed=ai_settings.get_seed(),
-        max_tokens=ai_settings.get_max_completion_tokens(),
-        frequency_penalty=ai_settings.get_frequency_penalty(),
-        presence_penalty=ai_settings.get_presence_penalty()
+        messages=prompts,
+        temperature = await ai_settings.get_temperature(),
+        top_p = await ai_settings.get_top_p(),
+        logit_bias = await ai_settings.get_logit_bias(),
+        seed = await ai_settings.get_seed(),
+        max_tokens = await ai_settings.get_max_completion_tokens(),
+        frequency_penalty = await ai_settings.get_frequency_penalty(),
+        presence_penalty = await ai_settings.get_presence_penalty()
     )
