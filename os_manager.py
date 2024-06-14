@@ -9,7 +9,8 @@ from json import dumps
 # load_dotenv()
 
 WHITELISTED_GUILDS:dict[str, int] = {
-    'TEST' : 1249087176592068659
+    'TEST' : 1249087176592068659,
+    'CLUB' : 1234652879713734737
 }
 
 # Environment variables
@@ -50,7 +51,7 @@ class resources:
                 'top_p' : 1,
                 'logit_bias' : {'1734': -100},
                 'seed' : 572875094,
-                'get_max_prompt_tokens' : 100,
+                'get_max_prompt_tokens' : 50,
                 'max_completion_tokens' : 20,
                 'frequency_penalty' : 0,
                 'presence_penalty' : 0
@@ -159,11 +160,8 @@ class resources:
             self = resources.settings
             await self.update_settings() # Make sure settings are updated
             
-            updated = self.DEFAULT.copy()
-            updated.update(new_settings)
-            
             with open(resources.SETTINGS_PATH, 'w',encoding='utf-8') as settings_file: # Open file
-                settings_file.write(updated)
+                settings_file.write(dumps(new_settings,indent=True))
 
     class ai_history:
         DEFAULT:list[dict[str, str]] = []

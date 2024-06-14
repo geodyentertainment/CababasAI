@@ -21,6 +21,8 @@ client = OpenAI(
     project=environment.OPENAI_PROJ
 )
 
+request_queue:dict[str, list[dict[str, any]]] = {}
+
 # Get a response based on the prompt. Returns the output message, and a flag determining if the process was a success.
 async def generate_response(prompt:str, user:User, guild_id:int) -> tuple[str, bool]:
     console.line()
@@ -82,6 +84,11 @@ async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dic
     result.append(dict(create_message(ROLE_USER,prompt)))
     result.append(dict(create_message(ROLE_SYSTEM,str(await resources.ai_system.get_system()))))
     return result
+
+async def add_queue(prompt:str, user:User, guild_id:int) -> None:
+    if str(guild_id) not in request_queue:
+        request_queue[str(guild_id)] = []
+    request_queue[str(guild_id)].append({'prompt':prompt,'user':user})
     
 async def create_chat_completion(prompts:list[dict[str, str]]):
     return client.chat.completions.create(
