@@ -31,7 +31,7 @@ DISCORD_ACTIVITY_PLAYING = [
     'Eating Simulator',
     'Roblox',
     'Genshin Impact',
-    'Honkai: Star Rail'
+    'Honkai: Star Rail',
     'Mario Kart',
     'with food'
 ]
@@ -49,7 +49,7 @@ DISCORD_ACTIVITY_WATCH = [
     'Discord',
     'EOM Robotics',
     'monicaand_clairesprobaking',
-    'Mukbang ASMR'
+    'Food ASMR'
 ]
 
 DISCORD_ACTIVITY_COMPETING = [
