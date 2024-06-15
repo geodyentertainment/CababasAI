@@ -20,4 +20,5 @@ def tokens_to_cost(input_tokens:int, output_tokens:int) -> float:
     return input_tokens_to_cost(input_tokens) + output_tokens_to_cost(output_tokens)
 
 def to_string(number:float) -> str:
-    return '{:6f}'.format(number)
+    
+    return f'{number:.6f}'

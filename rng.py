@@ -1,4 +1,6 @@
 from random import random
+import decimal
+
 from os_manager import resources
 from discord import Embed
 from discord import Color
@@ -7,28 +9,29 @@ history:dict[str, int] = {} # For debouncing n stuff
 
 # Stole these names from random roblox game (Sol's RNG)
 RANKS = {
-    'Common': 1/1.95, # It says 1/2, but it's really awarded when user lands on nothing
+    'Common': 1/2, # It says 1/2, but it's really awarded when user lands on nothing
     'Uncommon': 1/4,
     'Good' : 1/10,
     'Rare': 1/16,
-    'Radical': 1/31.831,
+    'Radical': 1/31.8310155,
     'Crystallized': 1/64,
     'Rage': 1/128,
     'Ruby': 1/350,
-    'Forbidden': 1/404,
-    'Emerald': 1/500,
-    'Ink': 1/700,
-    'Jackpot': 1/777,
-    'Sapphire': 1/800,
-    'Aquamarine': 1/900,
-    'Wind': 1/950,
-    'Good Cababas': 1/1000,
-    'Evil Cababas' : 1/1004,
-    'Glock' : 1/1700,
-    'Magnetic' : 1/2048,
-    'Sidereum' : 1/4096,
-    'Bleeding' : 1/4444,
-    'Solar' : 1/10000
+    'Forbidden': 1/500,
+    'Emerald': 1/750,
+    'Ink': 1/1000,
+    'Jackpot': 1/1250,
+    'Sapphire': 1/1500,
+    'Aquamarine': 1/1750,
+    '2048' : 1/2048,
+    'Wind': 1/3000,
+    'Glock' : 1/4000,
+    'Magnetic' : 1/5000,
+    'Sidereum' : 1/6000,
+    'Bleeding' : 1/7500,
+    'Solar' : 1/10000,
+    'Good Cababas' : 1/15000,
+    'Evil Cababas' : 1/20000
 }
 
 def roll(luck:float|None = 1.0) -> str:
@@ -65,7 +68,7 @@ async def browse_ranks(user_id:int) -> Embed:
     for rank in RANKS:
         embed.add_field(
             name=f'{rank}',
-            value=f'{str(round(get_chance(rank)*100, 2))}%',
+            value=f'{chance_to_string(get_chance(rank)*100)}%',
             inline=False
         )
     embed.colour = Color(0x006FFF)
@@ -82,15 +85,26 @@ async def user_roll(user_id:int) -> tuple[str, bool]:
 
     return current_roll, False
 
+def chance_to_string(number:float) -> str:
+    d = decimal.Decimal(number)
+    dec_places = -d.as_tuple().exponent
+    if dec_places < 1:
+        return f'{number:.0f}'
+    elif dec_places == 1:
+        return f'{number:.1f}'
+    elif dec_places == 2:
+        return f'{number:.2f}'
+    return f'{number:.3f}'
+
 # print(sum(RANKS.values()))
 
 # rank = list(RANKS.keys())[0]
 # counter = 0
 
-# while rank != 'Cababas Gambler':
+# while rank != 'Evil Cababas':
 #     counter+=1
 #     current_roll = roll()
     
 #     if get_chance(current_roll) < get_chance(rank):
 #         rank = current_roll
-#         print(f'{rank}, {counter}')
+#     print(f'{current_roll}, {counter}')

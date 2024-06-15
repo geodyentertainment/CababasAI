@@ -14,6 +14,7 @@ import os_manager
 import rng
 import faces
 from ai import generate_response
+from rng import chance_to_string
 
 DISCORD_STATUS = [
     Status.online,
@@ -237,7 +238,7 @@ class CababasBot(discord.Client):
 
             try:
                 rank = await rng.get_user_rank(user.id)
-                await interaction.response.send_message(f'<@{user.id}> rank is `{rank}` ({str(round(rng.get_chance(rank)*100, 2))}%)', ephemeral=True,silent=True)    
+                await interaction.response.send_message(f'<@{user.id}> rank is `{rank}` ({chance_to_string(rng.get_chance(rank)*100)}%)', ephemeral=True,silent=True)    
             except Exception as e:
                 await interaction.response.send_message(f'someting go wrong {choice(faces.SAD)} pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while sending {user.name} ({user.id}) their RNG rank: {str(e)}')
@@ -281,11 +282,11 @@ class CababasBot(discord.Client):
         
         try:
             if is_new_rank:
-                await interaction.channel.send(f'✨ WOWIE {choice(faces.HAPPY)} ✨ <@{user.id}> rolled new rank `{current_roll}` ({str(round(rng.get_chance(current_roll)*100, 2))}%)') 
+                await interaction.channel.send(f'✨ WOWIE {choice(faces.HAPPY)} ✨ <@{user.id}> rolled new rank `{current_roll}` ({chance_to_string(rng.get_chance(current_roll)*100)}%)') 
                 await interaction.response.send_message(ephemeral=True,delete_after=10.0,view=view) 
                 self.debounce.remove(user.id)
                 return
-            await interaction.response.send_message(f'u roll `{current_roll}` ({str(round(rng.get_chance(current_roll)*100,2))}%)',ephemeral=True,delete_after=10.0,view=view)  
+            await interaction.response.send_message(f'u roll `{current_roll}` ({chance_to_string(rng.get_chance(current_roll)*100)}%)',ephemeral=True,delete_after=10.0,view=view)  
         except discord.HTTPException as e:
             cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
         self.debounce.remove(user.id)
@@ -337,7 +338,7 @@ class CababasBot(discord.Client):
         return result
     
 class rng_roll_view(ui.View):
-    def __init__(self,client:CababasBot, *, timeout: float | None = 180):
+    def __init__(self,client:CababasBot,face:str, *, timeout: float | None = 180):
         super().__init__(timeout=timeout)
         self.client = client
             
