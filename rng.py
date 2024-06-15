@@ -7,7 +7,7 @@ history:dict[str, int] = {} # For debouncing n stuff
 
 # Stole these names from random roblox game (Sol's RNG)
 RANKS = {
-    'Common': 1/2, # It says 1/2, but it's really awarded when user lands on nothing
+    'Common': 1/1.95, # It says 1/2, but it's really awarded when user lands on nothing
     'Uncommon': 1/4,
     'Good' : 1/10,
     'Rare': 1/16,
@@ -22,16 +22,24 @@ RANKS = {
     'Sapphire': 1/800,
     'Aquamarine': 1/900,
     'Wind': 1/950,
-    'Cababas Fan': 1/1000,
-    'Cababas Gambler' : 1/10000
+    'Good Cababas': 1/1000,
+    'Evil Cababas' : 1/1004,
+    'Glock' : 1/1700,
+    'Magnetic' : 1/2048,
+    'Sidereum' : 1/4096,
+    'Bleeding' : 1/4444,
+    'Solar' : 1/10000
 }
 
-def roll() -> str:
+def roll(luck:float|None = 1.0) -> str:
     current_roll = random()
+    
+    temp_counter = 0.0
     
     for rank in reversed(RANKS):
         chance = RANKS[rank]
-        if current_roll <= chance:
+        temp_counter += (chance*luck)
+        if current_roll <= temp_counter:
             return rank
     return list(RANKS.keys())[0] # Return lowest rank by default
 
@@ -73,3 +81,16 @@ async def user_roll(user_id:int) -> tuple[str, bool]:
         return current_roll, True
 
     return current_roll, False
+
+# print(sum(RANKS.values()))
+
+# rank = list(RANKS.keys())[0]
+# counter = 0
+
+# while rank != 'Cababas Gambler':
+#     counter+=1
+#     current_roll = roll()
+    
+#     if get_chance(current_roll) < get_chance(rank):
+#         rank = current_roll
+#         print(f'{rank}, {counter}')
