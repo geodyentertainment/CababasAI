@@ -35,8 +35,11 @@ async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     if message.channel.id not in whitelisted_channels.values():
         return f'sowwy no use dat here {choice(faces.SAD)}', False
     
-    prompt = message.content.replace('cab ', '')
+    prompt = message.content[4:]
     guild_id = message.guild.id
+    
+    if len(prompt) <= 0:
+        return {choice(faces.CONFUSED)}, True
         
     console.task(f'Checking AI flags...')
     if not await resources.settings.ai_settings.is_enabled():

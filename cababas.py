@@ -36,7 +36,8 @@ DISCORD_ACTIVITY_PLAYING = [
     'Genshin Impact',
     'Honkai: Star Rail',
     'Mario Kart',
-    'with food'
+    'with food',
+    'rotting'
 ]
 
 DISCORD_ACTIVITY_LISTENING = [
