@@ -339,7 +339,7 @@ class CababasBot(discord.Client):
         return result
     
 class rng_roll_view(ui.View):
-    def __init__(self,client:CababasBot,face:str, *, timeout: float | None = 180):
+    def __init__(self,client:CababasBot, *, timeout: float | None = 180):
         super().__init__(timeout=timeout)
         self.client = client
             
