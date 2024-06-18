@@ -1,8 +1,10 @@
+from shutil import make_archive
 from os import environ
 from os import path
 from os import mkdir
 from json import loads
 from json import dumps
+from time import time
 
 ## Uncomment if necessary
 # from dotenv import load_dotenv
@@ -25,6 +27,7 @@ class environment:
 class resources:
     ## Constants
     FOLDER_PATH:str = 'resources'
+    BACKUP_FOLDER_PATH:str = 'resources-backups'
     AI_PATH:str = f'{FOLDER_PATH}/ai'
     RNG_PATH:str = f'{FOLDER_PATH}/rng'
     SETTINGS_PATH:str = f'{FOLDER_PATH}/Settings.json'
@@ -288,8 +291,6 @@ class resources:
 
             with open(resources.RNG_RANKS_PATH, 'w',encoding='utf-8') as file: # Open file
                 file.write(dumps(ranks,indent=True))
-            
-
 
     # Check and create missing resource files (including the directory itself)
     @staticmethod
@@ -298,6 +299,9 @@ class resources:
         # Update folders
         if not path.exists(self.FOLDER_PATH):
             mkdir(self.FOLDER_PATH)
+            
+        if not path.exists(self.BACKUP_FOLDER_PATH):
+            mkdir(self.BACKUP_FOLDER_PATH)
 
         if not path.exists(self.AI_PATH):
             mkdir(self.AI_PATH)
@@ -319,3 +323,14 @@ class resources:
 
         # Update the RNG ranks file
         await self.rng_ranks.update_ranks()
+        
+    @staticmethod
+    async def create_backup() -> str:
+        self = resources
+        await self.update_files() # Make sure everything is up-to-date
+        
+        output_path = f'{self.BACKUP_FOLDER_PATH}/resource-backup'
+        
+        make_archive(base_name=output_path, format='zip', root_dir=self.FOLDER_PATH)
+        
+        return output_path

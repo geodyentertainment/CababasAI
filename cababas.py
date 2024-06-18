@@ -1,5 +1,6 @@
 import discord
 import asyncio
+import time
 from discord import app_commands
 from discord import Activity
 from discord import ActivityType
@@ -178,7 +179,7 @@ class CababasBot(discord.Client):
     def create_slash_commands(self) -> None:
         @self.tree.command(
                 name='toggle-commands',
-                description='Toggle commands on/off GLOBALLY.',
+                description='Toggle commands on/off GLOBALLY. Only selected users are allowed to user this.',
                 guilds=self.get_whitelisted_guilds(),
                 extras={
                     'on':True,
@@ -197,7 +198,7 @@ class CababasBot(discord.Client):
             
         @self.tree.command(
                 name='toggle-commands-ai',
-                description='Toggle AI on/off GLOBALLY.',
+                description='Toggle AI on/off GLOBALLY. Only selected users are allowed to user this.',
                 guilds=self.get_whitelisted_guilds(),
                 extras={
                     'on':True,
@@ -212,6 +213,23 @@ class CababasBot(discord.Client):
 
             cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands-ai" with a status of {str(choice)}')
             await interaction.response.send_message(f'AI status is now [{choice}]', ephemeral=True)
+            self.debounce.remove(interaction.user.id)
+            
+        @self.tree.command(
+                name='backup-resources',
+                description='Create a backup. Only selected users are allowed to user this.',
+                guilds=self.get_whitelisted_guilds(),
+                extras={
+                    'dm'
+                }
+        )
+        async def backup_resources(interaction:discord.Interaction, dm:bool|None=False):
+            if not await self.check_flags(interaction,True): return
+            user = interaction.user
+            self.debounce.append(user.id)
+            
+            await self.command_backup_resource(interaction,dm)
+            
             self.debounce.remove(interaction.user.id)
 
         @self.tree.command(
@@ -291,18 +309,38 @@ class CababasBot(discord.Client):
         except discord.HTTPException as e:
             cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
         self.debounce.remove(user.id)
+        
+    async def command_backup_resource(self, interaction:discord.Interaction, dm:bool|None=False) -> None:
+        try:
+            user = interaction.user
+            
+            archive_path = f'{str(await os_manager.resources.create_backup())}.zip'
+        
+            attachement_name = f'backup-{round(time.time())}.zip'
+            if dm:
+                user_dm = await user.create_dm()
+                await user_dm.send(f'Backup created: ', file=discord.File(fp=archive_path,filename=attachement_name))
+            
+            backup_channel:discord.TextChannel = self.get_channel(1249484273916837889)
+            await backup_channel.send(f'```\nBackup created by {user.name} ({user.id})\n```', file=discord.File(fp=archive_path,filename=attachement_name))
+        except Exception as e:
+            await interaction.response.send_message(f'An Python error occurred while backing up: {str(e)}',ephemeral=True)
+            cons.error(str(e))
+            return
+            
+        await interaction.response.send_message(f'Backup created.',ephemeral=True,delete_after=20)
 
     # Stop the bot
     async def stop(self) -> None:
         cons.error(f'Terminating process...')
         exit(0)
         
-    async def check_flags(self, interaction:discord.Interaction, is_manager_command:bool) -> bool:
+    async def check_flags(self, interaction:discord.Interaction, is_manager_command:bool|None=False) -> bool:
         if not self.ready:
                 await interaction.response.send_message('hold on pls', ephemeral=True, delete_after=10.0)
                 return False
             
-        if not self.enabled:
+        if not self.enabled and not is_manager_command:
             await interaction.response.send_message(f'sowwy dev say no command rn {choice(faces.SAD)}', ephemeral=True, delete_after=10.0)
             return False
         
