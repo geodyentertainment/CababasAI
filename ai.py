@@ -105,7 +105,7 @@ async def create_prompt_history(prompt:str, user:User, guild_id:int) -> list[dic
             result.insert(0, reversed_history[i])
         else:
             break
-    result.append(dict(create_message(ROLE_USER,f'Maintain the character of Cameluo Cababas. {prompt}')))
+    result.append(dict(create_message(ROLE_USER,f'{prompt}')))
     result.append(dict(create_message(ROLE_SYSTEM,
         f'{str(await resources.ai_system.get_system())} You are talking to {user.name}.'                                  
     )))

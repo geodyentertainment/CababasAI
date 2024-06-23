@@ -76,6 +76,8 @@ DISCORD_ACTIVITY_STREAMING = [
     'VSCode'
 ]
 
+LOVE_GIF = 'https://cdn.discordapp.com/attachments/1249693861115334678/1253673044379963422/CababasLove.gif'
+
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
     enable:bool
@@ -281,6 +283,19 @@ class CababasBot(discord.Client):
                 await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while {user.name} ({user.id}) was browsing RNG ranks: {str(e)}')
             self.debounce.remove(user.id)
+            
+        @self.tree.command(
+                name='love',
+                description='Cababas love!',
+                guilds=self.get_whitelisted_guilds()
+        )
+        async def cababas_love(interaction:discord.Interaction):
+            if not await self.check_flags(interaction,False): return
+            self.debounce.append(interaction.user.id)
+            
+            await interaction.response.send_message(content=LOVE_GIF) 
+               
+            self.debounce.remove(interaction.user.id)
             
     async def command_rng(self, interaction:discord.Interaction) -> None:
         if not await self.check_flags(interaction,False): return
