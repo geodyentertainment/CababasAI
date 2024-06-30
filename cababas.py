@@ -9,11 +9,13 @@ from discord import User
 from discord import ui
 from typing import Any
 from random import choice
+from PIL.Image import Image
 
 import console as cons
 import os_manager
 import rng
 import faces
+import pfp
 from ai import generate_response
 from rng import chance_to_string
 
@@ -38,7 +40,7 @@ DISCORD_ACTIVITY_PLAYING = [
     'Honkai: Star Rail',
     'Mario Kart',
     'with food',
-    'rotting'
+    'Rotting'
 ]
 
 DISCORD_ACTIVITY_LISTENING = [
@@ -123,6 +125,8 @@ class CababasBot(discord.Client):
             await self.stop()
             return
         
+        self.ready = True
+        
         # Syncing slash commands
         cons.task(f'Syncing the command tree...')
         try:
@@ -132,7 +136,6 @@ class CababasBot(discord.Client):
         except Exception as e:
             cons.error(f'An error occurred while syncing app commands: {str(e)}. Bot will continue to run.')
         
-        self.ready = True
         cons.success(f'Successfully set up the server. Bot is ready for use.')
         
         # Cycling through random presences
@@ -294,6 +297,26 @@ class CababasBot(discord.Client):
             self.debounce.append(interaction.user.id)
             
             await interaction.response.send_message(content=LOVE_GIF) 
+               
+            self.debounce.remove(interaction.user.id)
+            
+        @self.tree.command(
+                name='murder',
+                description='Murder someone >:)',
+                guilds=self.get_whitelisted_guilds(),
+                extras={
+                    'Victim'
+                }
+        )
+        async def cababas_murder(interaction:discord.Interaction, victim:User):
+            if not await self.check_flags(interaction,False): return
+            self.debounce.append(interaction.user.id)
+            
+            try:
+                pfp_img:Image = pfp.murder(victim,True if victim.id == self.user.id else False)
+                await interaction.response.send_message(file=pfp.image_to_file(pfp_img))
+            except Exception as e:
+                cons.error(f'Error while running murder command: {str(e)}')
                
             self.debounce.remove(interaction.user.id)
             
