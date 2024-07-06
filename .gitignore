@@ -1,4 +1,6 @@
 /.venv/*
-/resources/*
+/resources/ai
+/resources/rng
+/resources/settings.json
 /resources-backups/*
 .env
