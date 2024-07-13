@@ -37,27 +37,30 @@ def murder(user:User,refuse:bool|None = False) -> Image.Image:
     else:
         murder_img = Image.open(MURDER_PATH).convert('RGBA')
     
-    bg = Image.open(MURDER_BG_PATH).convert('RGBA')
+    with Image.open(MURDER_BG_PATH).convert('RGBA') as bg:
     
-    w,h = bg.size
-    
-    new_murder_img = murder_img.resize((int(h),int(h))).rotate(-10,Image.Resampling.BILINEAR)
-    new_pfp = pfp.resize(
-        (int(h/1.5),int(h/1.5))
-    )
-    pfp.close()
-    murder_img.close()
-    
-    murder_img_offset = (
-        int(w-new_murder_img.size[0]-(w*0.1)),
-        int((h-new_murder_img.size[1])/2)
-    )
-    pfp_offset = (
-        int(w*0.1),
-        int((h-new_pfp.size[1])/2)
-    )
-    
-    bg.paste(new_pfp, pfp_offset, new_pfp)
-    bg.paste(new_murder_img, murder_img_offset, new_murder_img)
+        w,h = bg.size
+        
+        new_murder_img = murder_img.resize((int(h),int(h))).rotate(-10,Image.Resampling.BILINEAR)
+        new_pfp = pfp.resize(
+            (int(h/1.5),int(h/1.5))
+        )
+        pfp.close()
+        murder_img.close()
+        
+        murder_img_offset = (
+            int(w-new_murder_img.size[0]-(w*0.1)),
+            int((h-new_murder_img.size[1])/2)
+        )
+        pfp_offset = (
+            int(w*0.1),
+            int((h-new_pfp.size[1])/2)
+        )
+        
+        bg.paste(new_pfp, pfp_offset, new_pfp)
+        bg.paste(new_murder_img, murder_img_offset, new_murder_img)
 
-    return bg
+        new_murder_img.close()
+        new_pfp.close()
+
+        return bg
