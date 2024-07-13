@@ -3,5 +3,4 @@
 /resources/rng
 /resources/settings.json
 /resources-backups/*
-.env
 /__pycache__/*
