@@ -32,8 +32,8 @@ async def generate_response(user:User, message:Message) -> tuple[str, bool]:
     
     whitelisted_channels = await resources.settings.ai_settings.get_whitelisted_channels()
     
-    if message.channel.id not in whitelisted_channels.values():
-        return f'sowwy no use dat here {choice(faces.SAD)}', False
+    # if message.channel.id not in whitelisted_channels.values():
+    #     return f'sowwy no use dat here {choice(faces.SAD)}', False
     
     prompt = message.content[4:]
     guild_id = message.guild.id

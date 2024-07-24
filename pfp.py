@@ -8,6 +8,8 @@ MURDER_PATH = 'resources/Images/CababasMurder.png'
 MURDER_BG_PATH = 'resources/Images/CababasMurderBackground.png'
 CABABAS_PATH = 'resources/Images/CababasNoMurder.png'
 
+CAT_BG_PATH = 'resources/Images/CatBackground.png'
+
 def get_pfp_as_bytes(user:User) -> bytes:
     with requests.get(user.avatar.url) as r:
         raw = r.content
@@ -64,3 +66,12 @@ def murder(user:User,refuse:bool|None = False) -> Image.Image:
         new_pfp.close()
 
         return bg
+    
+def cat(user:User,refuse:bool|None=False) -> Image.Image:
+    with get_pfp_as_image(user).convert('RGBA') as pfp:
+        with Image.open(CAT_BG_PATH).convert('RGBA') as bg:
+            w,h = bg.size
+            return pfp
+            
+            # with pfp.resize((int(w/5),int(w/5))) as pfp_resized:
+                

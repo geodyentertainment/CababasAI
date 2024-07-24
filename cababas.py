@@ -40,7 +40,8 @@ DISCORD_ACTIVITY_PLAYING = [
     'Honkai: Star Rail',
     'Mario Kart',
     'with food',
-    'Rotting'
+    'Rotting',
+    'Doki Doki Literature Club'
 ]
 
 DISCORD_ACTIVITY_LISTENING = [
@@ -56,7 +57,8 @@ DISCORD_ACTIVITY_WATCH = [
     'Discord',
     'EOM Robotics',
     'monicaand_clairesprobaking',
-    'Food ASMR'
+    'Food ASMR',
+    'Anime'
 ]
 
 DISCORD_ACTIVITY_COMPETING = [
@@ -75,7 +77,8 @@ DISCORD_ACTIVITY_STREAMING = [
     'Discord',
     'homework',
     'CS',
-    'VSCode'
+    'VSCode',
+    'Roblox'
 ]
 
 LOVE_GIF = 'https://cdn.discordapp.com/attachments/1249693861115334678/1253673044379963422/CababasLove.gif'
@@ -161,7 +164,10 @@ class CababasBot(discord.Client):
         
         self.debounce.append(sender.id)
 
-        if content.lower().startswith('cab '):
+        try:
+            if not content.lower().startswith('cab '):
+                return
+            
             if is_dm:
                 await message.reply('sowwy :( no dms pls',delete_after=5.0)
                 self.debounce.remove(sender.id)
@@ -178,7 +184,11 @@ class CababasBot(discord.Client):
                 if is_success:
                     await message.reply(response,mention_author=False)
                 else:
-                    await message.reply(response,mention_author=False,delete_after=10.0)    
+                    await message.reply(response,mention_author=False,delete_after=10.0) 
+        except Exception as e:
+             await message.reply(f'`bad error occurred {choice(faces.CONFUSED)}`',mention_author=False)
+             cons.error(str(e))       
+           
         self.debounce.remove(sender.id)
         
     def create_slash_commands(self) -> None:
@@ -195,10 +205,15 @@ class CababasBot(discord.Client):
             if not await self.check_flags(interaction,True): return
             self.debounce.append(interaction.user.id)
             
-            self.enabled = choice
+            try:
+                self.enabled = choice
 
-            cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands" with a status of {str(choice)}')
-            await interaction.response.send_message(f'Command status is now [{choice}]', ephemeral=True)
+                cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands" with a status of {str(choice)}')
+                await interaction.response.send_message(f'Command status is now [{choice}]', ephemeral=True)
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')
+                cons.error(str(e))
+            
             self.debounce.remove(interaction.user.id)
             
         @self.tree.command(
@@ -214,10 +229,15 @@ class CababasBot(discord.Client):
             if not await self.check_flags(interaction,True): return
             self.debounce.append(interaction.user.id)
             
-            await os_manager.resources.settings.ai_settings.set_enabled(choice)
+            try:
+                await os_manager.resources.settings.ai_settings.set_enabled(choice)
 
-            cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands-ai" with a status of {str(choice)}')
-            await interaction.response.send_message(f'AI status is now [{choice}]', ephemeral=True)
+                cons.log(f'{interaction.user.name}-({interaction.user.id}) is accessing "toggle-commands-ai" with a status of {str(choice)}')
+                await interaction.response.send_message(f'AI status is now [{choice}]', ephemeral=True)
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
+                cons.error(str(e))
+                
             self.debounce.remove(interaction.user.id)
             
         @self.tree.command(
@@ -233,7 +253,11 @@ class CababasBot(discord.Client):
             user = interaction.user
             self.debounce.append(user.id)
             
-            await self.command_backup_resource(interaction,dm)
+            try:
+                await self.command_backup_resource(interaction,dm)
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
+                cons.error(str(e))
             
             self.debounce.remove(interaction.user.id)
 
@@ -285,6 +309,7 @@ class CababasBot(discord.Client):
             except Exception as e:
                 await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while {user.name} ({user.id}) was browsing RNG ranks: {str(e)}')
+                
             self.debounce.remove(user.id)
             
         @self.tree.command(
@@ -296,7 +321,11 @@ class CababasBot(discord.Client):
             if not await self.check_flags(interaction,False): return
             self.debounce.append(interaction.user.id)
             
-            await interaction.response.send_message(content=LOVE_GIF) 
+            try:
+                await interaction.response.send_message(content=LOVE_GIF) 
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
+                cons.error(str(e))
                
             self.debounce.remove(interaction.user.id)
             
@@ -346,6 +375,7 @@ class CababasBot(discord.Client):
             await interaction.response.send_message(f'u roll `{current_roll}` ({chance_to_string(rng.get_chance(current_roll)*100)}%)',ephemeral=True,delete_after=10.0,view=view)  
         except discord.HTTPException as e:
             cons.error(f'Error sending RNG results of [{current_roll}] to {user.name} ({user.id}): {str(e)}')
+            
         self.debounce.remove(user.id)
         
     async def command_backup_resource(self, interaction:discord.Interaction, dm:bool|None=False) -> None:
@@ -365,7 +395,7 @@ class CababasBot(discord.Client):
             await interaction.response.send_message(f'An Python error occurred while backing up: {str(e)}',ephemeral=True)
             cons.error(str(e))
             return
-            
+
         await interaction.response.send_message(f'Backup created.',ephemeral=True,delete_after=20)
 
     # Stop the bot
@@ -375,8 +405,8 @@ class CababasBot(discord.Client):
         
     async def check_flags(self, interaction:discord.Interaction, is_manager_command:bool|None=False) -> bool:
         if not self.ready:
-                await interaction.response.send_message('hold on pls', ephemeral=True, delete_after=10.0)
-                return False
+            await interaction.response.send_message('hold on pls', ephemeral=True, delete_after=10.0)
+            return False
             
         if not self.enabled and not is_manager_command:
             await interaction.response.send_message(f'sowwy dev say no command rn {choice(faces.SAD)}', ephemeral=True, delete_after=10.0)

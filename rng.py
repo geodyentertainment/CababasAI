@@ -1,4 +1,4 @@
-from random import random
+import random
 import decimal
 
 from os_manager import resources
@@ -35,7 +35,7 @@ RANKS = {
 }
 
 def roll(luck:float|None = 1.0) -> str:
-    current_roll = random()
+    current_roll = random.random()
     
     temp_counter = 0.0
     
