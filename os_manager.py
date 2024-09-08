@@ -5,6 +5,7 @@ from os import mkdir
 from json import loads
 from json import dumps
 from time import time
+from discord import ActivityType
 
 ## Uncomment if necessary
 # from dotenv import load_dotenv
@@ -30,7 +31,7 @@ class resources:
     ## Constants
     FOLDER_PATH:str = 'resources'
     BACKUP_FOLDER_PATH:str = 'resources-backups'
-    KYS_COUNTER_PATH:str = f'{FOLDER_PATH}/kys_count.json'
+    ACTIVITIES_FOLDER_PATH:str = f'{FOLDER_PATH}/activities'
     AI_PATH:str = f'{FOLDER_PATH}/ai'
     RNG_PATH:str = f'{FOLDER_PATH}/rng'
     SETTINGS_PATH:str = f'{FOLDER_PATH}/Settings.json'
@@ -40,6 +41,12 @@ class resources:
     AI_FINE_TUNE_PATH:str = f'{AI_PATH}/FineTuning.jsonl'
 
     RNG_RANKS_PATH:str = f'{RNG_PATH}/Ranks.json'
+    
+    ACTIVITIES_PLAYING_PATH = f'{ACTIVITIES_FOLDER_PATH}/playing.json'
+    ACTIVITIES_LISTENING_PATH = f'{ACTIVITIES_FOLDER_PATH}/listening.json'
+    ACTIVITIES_WATCHING_PATH = f'{ACTIVITIES_FOLDER_PATH}/watching.json'
+    ACTIVITIES_COMPETING_PATH = f'{ACTIVITIES_FOLDER_PATH}/competing.json'
+    ACTIVITIES_STREAMING_PATH = f'{ACTIVITIES_FOLDER_PATH}/streaming.json'
 
     class settings:
         DEFAULT:dict[str, dict[str, any]] = {
@@ -294,6 +301,99 @@ class resources:
 
             with open(resources.RNG_RANKS_PATH, 'w',encoding='utf-8') as file: # Open file
                 file.write(dumps(ranks,indent=True))
+                
+    class activities:
+        DEFAULT_PLAYING = [
+            'Eating Simulator',
+            'Roblox',
+            'Genshin Impact',
+            'Honkai: Star Rail',
+            'Mario Kart',
+            'with food',
+            'Rotting',
+            'Doki Doki Literature Club'
+        ]
+        
+        DEFAULT_LISTENING = [
+            'Spotify',
+            'Laufey',
+            'Skibidi Fortnite',
+            'Mahler',
+            'Food ASMR'
+        ]
+        
+        DEFAULT_WATCH = [
+            'YouTube',
+            'Discord',
+            'EOM Robotics',
+            'monicaand_clairesprobaking',
+            'Food ASMR',
+            'Anime'
+        ]
+        
+        DEFAULT_COMPETING = [
+            'FRC',
+            'Eating Competition'
+        ]
+        
+        DEFAULT_STREAMING = [
+            'Eating Simulator',
+            'Roblox',
+            'Genshin Impact',
+            'Honkai: Star Rail'
+            'Mario Kart',
+            'with food',
+            'YouTube',
+            'Discord',
+            'homework',
+            'CS',
+            'VSCode',
+            'Roblox'
+        ]
+
+        @staticmethod
+        async def update_activities() -> None:
+            self = resources
+            # Check if system file exists
+            if not path.exists(self.ACTIVITIES_PLAYING_PATH):
+                with open(self.ACTIVITIES_PLAYING_PATH, 'x',encoding='utf-8') as file:
+                    file.write(dumps(self.activities.DEFAULT_PLAYING,indent=True))
+                    
+            if not path.exists(self.ACTIVITIES_LISTENING_PATH):
+                with open(self.ACTIVITIES_LISTENING_PATH, 'x',encoding='utf-8') as file:
+                    file.write(dumps(self.activities.DEFAULT_LISTENING,indent=True))
+                    
+            if not path.exists(self.ACTIVITIES_WATCHING_PATH):
+                with open(self.ACTIVITIES_WATCHING_PATH, 'x',encoding='utf-8') as file:
+                    file.write(dumps(self.activities.DEFAULT_WATCH,indent=True))
+                    
+            if not path.exists(self.ACTIVITIES_COMPETING_PATH):
+                with open(self.ACTIVITIES_COMPETING_PATH, 'x',encoding='utf-8') as file:
+                    file.write(dumps(self.activities.DEFAULT_COMPETING,indent=True))
+                    
+            if not path.exists(self.ACTIVITIES_STREAMING_PATH):
+                with open(self.ACTIVITIES_STREAMING_PATH, 'x',encoding='utf-8') as file:
+                    file.write(dumps(self.activities.DEFAULT_STREAMING,indent=True))
+
+        @staticmethod
+        async def getNames(type:ActivityType) -> list[str]:
+            self = resources
+            path = ''
+
+            if type == ActivityType.playing:
+                path = self.ACTIVITIES_PLAYING_PATH
+            elif type == ActivityType.listening:
+                path = self.ACTIVITIES_LISTENING_PATH
+            elif type == ActivityType.watching:
+                path = self.ACTIVITIES_WATCHING_PATH
+            elif type == ActivityType.competing:
+                path = self.ACTIVITIES_COMPETING_PATH
+            else:
+                path = self.ACTIVITIES_STREAMING_PATH
+            
+            await self.activities.update_activities()
+            with open(path, 'r',encoding='utf-8') as file: # Open file
+                return loads(file.read()) # Read file, load, and return value
 
     # Check and create missing resource files (including the directory itself)
     @staticmethod
@@ -311,6 +411,9 @@ class resources:
 
         if not path.exists(self.RNG_PATH):
             mkdir(self.RNG_PATH)
+            
+        if not path.exists(self.ACTIVITIES_FOLDER_PATH):
+            mkdir(self.ACTIVITIES_FOLDER_PATH)
 
         # Update settings
         await self.settings.update_settings()
@@ -326,6 +429,9 @@ class resources:
 
         # Update the RNG ranks file
         await self.rng_ranks.update_ranks()
+        
+        # Update the activities file
+        await self.activities.update_activities()
         
     @staticmethod
     async def create_backup() -> str:

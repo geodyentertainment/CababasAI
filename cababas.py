@@ -33,54 +33,6 @@ DISCORD_ACTIVITY_TYPES = [
     ActivityType.streaming
 ]
 
-DISCORD_ACTIVITY_PLAYING = [
-    'Eating Simulator',
-    'Roblox',
-    'Genshin Impact',
-    'Honkai: Star Rail',
-    'Mario Kart',
-    'with food',
-    'Rotting',
-    'Doki Doki Literature Club'
-]
-
-DISCORD_ACTIVITY_LISTENING = [
-    'Spotify',
-    'Laufey',
-    'Skibidi Fortnite',
-    'Mahler',
-    'Food ASMR'
-]
-
-DISCORD_ACTIVITY_WATCH = [
-    'YouTube',
-    'Discord',
-    'EOM Robotics',
-    'monicaand_clairesprobaking',
-    'Food ASMR',
-    'Anime'
-]
-
-DISCORD_ACTIVITY_COMPETING = [
-    'FRC',
-    'Eating Competition'
-]
-
-DISCORD_ACTIVITY_STREAMING = [
-    'Eating Simulator',
-    'Roblox',
-    'Genshin Impact',
-    'Honkai: Star Rail'
-    'Mario Kart',
-    'with food',
-    'YouTube',
-    'Discord',
-    'homework',
-    'CS',
-    'VSCode',
-    'Roblox'
-]
-
 LOVE_GIF = 'https://cdn.discordapp.com/attachments/1249693861115334678/1253673044379963422/CababasLove.gif'
 
 class CababasBot(discord.Client):
@@ -143,7 +95,11 @@ class CababasBot(discord.Client):
         
         # Cycling through random presences
         while True:
-            await self.change_presence(status=choice(DISCORD_STATUS), activity=self.generate_random_activity())
+            try:
+                random_activity = await self.generate_random_activity()
+                await self.change_presence(status=choice(DISCORD_STATUS), activity=random_activity)
+            except Exception as e:
+                cons.error(f'Could not generate random activity: {str(e)}')
             await asyncio.sleep(600)
 
     # Received message
@@ -476,19 +432,10 @@ class CababasBot(discord.Client):
         
         return True
         
-    def generate_random_activity(self) -> Activity:
+    async def generate_random_activity(self) -> Activity:
         random_type = choice(DISCORD_ACTIVITY_TYPES)
-        if random_type == ActivityType.playing:
-            return Activity(type=random_type,name=choice(DISCORD_ACTIVITY_PLAYING))
-        elif random_type == ActivityType.listening:
-            return Activity(type=random_type,name=choice(DISCORD_ACTIVITY_LISTENING))
-        elif random_type == ActivityType.watching:
-            return Activity(type=random_type,name=choice(DISCORD_ACTIVITY_WATCH))
-        elif random_type == ActivityType.competing:
-            return Activity(type=random_type,name=choice(DISCORD_ACTIVITY_COMPETING))
-        elif random_type == ActivityType.streaming:
-            return Activity(type=random_type,name=choice(DISCORD_ACTIVITY_STREAMING))
-        return Activity(type=random_type,name='stuff')
+        random_names = await os_manager.resources.activities.getNames(random_type)
+        return Activity(type=random_type,name=choice(random_names))
 
     # Get an array of the whitelisted guilds
     def get_whitelisted_guilds(self) -> list[discord.Object]:
