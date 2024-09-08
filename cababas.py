@@ -246,10 +246,10 @@ class CababasBot(discord.Client):
                 return
             
             try:
-                await self.get_channel(channel_id).connect()
+                await self.get_channel(channel_id).connect(self_mute=True)
                 await interaction.response.send_message(f'joined {choice(faces.HAPPY)}',ephemeral=True)  
             except Exception as e:
-                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`',ephemeral=True)   
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}` {str(e)}',ephemeral=True)   
                 cons.error(str(e))
                 
             self.debounce.remove(interaction.user.id)
@@ -270,6 +270,8 @@ class CababasBot(discord.Client):
             
             try:
                 for vc_client in self.voice_clients:
+                    if vc_client != None:
+                        vc_client.cleanup()
                     await vc_client.disconnect()
                 await interaction.response.send_message(f'left {choice(faces.HAPPY)}',ephemeral=True)  
             except Exception as e:
