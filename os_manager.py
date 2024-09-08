@@ -340,7 +340,7 @@ class resources:
             'Eating Simulator',
             'Roblox',
             'Genshin Impact',
-            'Honkai: Star Rail'
+            'Honkai: Star Rail',
             'Mario Kart',
             'with food',
             'YouTube',
