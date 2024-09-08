@@ -192,10 +192,13 @@ class CababasBot(discord.Client):
         self.debounce.remove(sender.id)
         
     def create_slash_commands(self) -> None:
+        developer_guilds = [discord.Object(os_manager.DEVELOPER_GUILD)]
+        whitelisted_guilds = self.get_whitelisted_guilds()
+        
         @self.tree.command(
                 name='toggle-commands',
                 description='Toggle commands on/off GLOBALLY. Only selected users are allowed to user this.',
-                guilds=self.get_whitelisted_guilds(),
+                guilds=developer_guilds,
                 extras={
                     'on':True,
                     'off':False
@@ -219,7 +222,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='toggle-commands-ai',
                 description='Toggle AI on/off GLOBALLY. Only selected users are allowed to user this.',
-                guilds=self.get_whitelisted_guilds(),
+                guilds=developer_guilds,
                 extras={
                     'on':True,
                     'off':False
@@ -243,7 +246,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='backup-resources',
                 description='Create a backup. Only selected users are allowed to user this.',
-                guilds=self.get_whitelisted_guilds(),
+                guilds=developer_guilds,
                 extras={
                     'dm'
                 }
@@ -260,11 +263,61 @@ class CababasBot(discord.Client):
                 cons.error(str(e))
             
             self.debounce.remove(interaction.user.id)
+            
+        @self.tree.command(
+                name='join-voice',
+                description='Join a voice channel. Only selected users are allowed to user this.',
+                guilds=developer_guilds,
+                extras={
+                    'channel'
+                }
+        )
+        async def join_voice(interaction:discord.Interaction, channel:discord.VoiceChannel):
+            if not await self.check_flags(interaction,True): return
+            self.debounce.append(interaction.user.id)
+            
+            if (len(self.voice_clients) > 0):
+                await interaction.response.send_message(f'me alweady in voice channel {choice(faces.SAD)}',ephemeral=True)   
+                self.debounce.remove(interaction.user.id)
+                return
+            
+            try:
+                await self.get_channel(channel.id).connect()
+                await interaction.response.send_message(f'joined {choice(faces.HAPPY)}',ephemeral=True)  
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`',ephemeral=True)   
+                cons.error(str(e))
+                
+            self.debounce.remove(interaction.user.id)
+            
+        @self.tree.command(
+                name='leave-voice',
+                description='Leave a voice channel. Only selected users are allowed to user this.',
+                guilds=developer_guilds
+        )
+        async def leave_voice(interaction:discord.Interaction):
+            if not await self.check_flags(interaction,True): return
+            self.debounce.append(interaction.user.id)
+            
+            if (len(self.voice_clients) <= 0):
+                await interaction.response.send_message(f'me not in voice channel {choice(faces.SAD)}',ephemeral=True)   
+                self.debounce.remove(interaction.user.id)
+                return
+            
+            try:
+                for vc_client in self.voice_clients:
+                    await vc_client.disconnect()
+                await interaction.response.send_message(f'left {choice(faces.HAPPY)}',ephemeral=True)  
+            except Exception as e:
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`',ephemeral=True)   
+                cons.error(str(e))
+                
+            self.debounce.remove(interaction.user.id)
 
         @self.tree.command(
                 name='rng',
                 description='Randomly roll a rank.',
-                guilds=self.get_whitelisted_guilds()
+                guilds=whitelisted_guilds
         )
         async def rng_command(interaction:discord.Interaction):
             await self.command_rng(interaction=interaction)
@@ -272,7 +325,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='rng-view-rank',
                 description='View your current rank.',
-                guilds=self.get_whitelisted_guilds(),
+                guilds=whitelisted_guilds,
                 extras={
                     'user'
                 }
@@ -295,7 +348,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='rng-ranks-list',
                 description='View all the aquireable ranks and their chances of being rolled.',
-                guilds=self.get_whitelisted_guilds()
+                guilds=whitelisted_guilds
         )
         async def rng_browse_ranks(interaction:discord.Interaction):
             if not await self.check_flags(interaction,False): return
@@ -315,7 +368,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='love',
                 description='Cababas love!',
-                guilds=self.get_whitelisted_guilds()
+                guilds=whitelisted_guilds
         )
         async def cababas_love(interaction:discord.Interaction):
             if not await self.check_flags(interaction,False): return
@@ -332,7 +385,7 @@ class CababasBot(discord.Client):
         @self.tree.command(
                 name='murder',
                 description='Murder someone >:)',
-                guilds=self.get_whitelisted_guilds(),
+                guilds=whitelisted_guilds,
                 extras={
                     'Victim'
                 }
@@ -343,7 +396,7 @@ class CababasBot(discord.Client):
             
             try:
                 pfp_img:Image = pfp.murder(victim,True if victim.id == self.user.id else False)
-                await interaction.response.send_message(file=pfp.image_to_file(pfp_img))
+                await interaction.response.send_message(content=f'<@{interaction.user.id}> make me kill <@{victim.id}> {choice(faces.SAD)}',file=pfp.image_to_file(pfp_img),silent=True)
             except Exception as e:
                 cons.error(f'Error while running murder command: {str(e)}')
                

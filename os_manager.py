@@ -15,6 +15,8 @@ WHITELISTED_GUILDS:dict[str, int] = {
     'CLUB' : 1234652879713734737
 }
 
+DEVELOPER_GUILD = 1249087176592068659;
+
 # Environment variables
 class environment:
     OPENAI_API:str = environ.get('OPENAI_CABABAS_API_KEY', 'unknown') # The API key to access OpenAI's API
@@ -28,6 +30,7 @@ class resources:
     ## Constants
     FOLDER_PATH:str = 'resources'
     BACKUP_FOLDER_PATH:str = 'resources-backups'
+    KYS_COUNTER_PATH:str = f'{FOLDER_PATH}/kys_count.json'
     AI_PATH:str = f'{FOLDER_PATH}/ai'
     RNG_PATH:str = f'{FOLDER_PATH}/rng'
     SETTINGS_PATH:str = f'{FOLDER_PATH}/Settings.json'
@@ -55,7 +58,7 @@ class resources:
                 },
                 'encoding_model' : 'gpt-3.5-turbo',
                 'history_memory' : 10,
-                'temperature' : 0.75,
+                'temperature' : 0.8,
                 'top_p' : 1,
                 'logit_bias' : {'1734': -100},
                 'seed' : 572875094,
