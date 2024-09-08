@@ -225,10 +225,10 @@ class CababasBot(discord.Client):
                 description='Join a voice channel. Only selected users are allowed to user this.',
                 guilds=developer_guilds,
                 extras={
-                    'channel'
+                    'Channel ID'
                 }
         )
-        async def join_voice(interaction:discord.Interaction, channel:discord.VoiceChannel):
+        async def join_voice(interaction:discord.Interaction, channel_id:str):
             if not await self.check_flags(interaction,True): return
             self.debounce.append(interaction.user.id)
             
@@ -237,8 +237,16 @@ class CababasBot(discord.Client):
                 self.debounce.remove(interaction.user.id)
                 return
             
+            channel_id:int
             try:
-                await self.get_channel(channel.id).connect()
+                channel_id = int(channel_id)
+            except Exception:
+                await interaction.response.send_message(f'pls give valid id {choice(faces.SAD)}',ephemeral=True)  
+                self.debounce.remove(interaction.user.id)
+                return
+            
+            try:
+                await self.get_channel(channel_id).connect()
                 await interaction.response.send_message(f'joined {choice(faces.HAPPY)}',ephemeral=True)  
             except Exception as e:
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`',ephemeral=True)   
