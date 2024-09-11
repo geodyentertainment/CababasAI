@@ -1,6 +1,8 @@
 import discord
 import asyncio
 import time
+import random
+from os import path
 from discord import app_commands
 from discord import Activity
 from discord import ActivityType
@@ -16,6 +18,7 @@ import os_manager
 import rng
 import faces
 import pfp
+import voice_chat
 from ai import generate_response
 from rng import chance_to_string
 
@@ -34,6 +37,7 @@ DISCORD_ACTIVITY_TYPES = [
 ]
 
 LOVE_GIF = 'https://cdn.discordapp.com/attachments/1249693861115334678/1253673044379963422/CababasLove.gif'
+CABABAS_ASCII_PATH = 'resources/Images/cababas.txt'
 
 class CababasBot(discord.Client):
     ready:bool # Flag determining if the command tree is ready or not
@@ -93,14 +97,40 @@ class CababasBot(discord.Client):
         
         cons.success(f'Successfully set up the server. Bot is ready for use.')
         
-        # Cycling through random presences
         while True:
             try:
+                guild = self.get_guild(os_manager.VC_GUILD)
+                if guild != None:
+                    await self.auto_handle_voice_chats(guild=guild)
+            except Exception as e:
+                cons.error(f'Could not determine if the bot should leave or join a voice channel: {str(e)}')
+                await voice_chat.leave(self)
+            
+            try: # Cycle through random presences
                 random_activity = await self.generate_random_activity()
                 await self.change_presence(status=choice(DISCORD_STATUS), activity=random_activity)
             except Exception as e:
                 cons.error(f'Could not generate random activity: {str(e)}')
-            await asyncio.sleep(600)
+                
+            await asyncio.sleep(random.randint(600,1800))
+            # await asyncio.sleep(10)
+    
+    async def auto_handle_voice_chats(self, guild:discord.Guild):
+        channels = guild.voice_channels
+        
+        if voice_chat.check_if_in_vc(self):
+            for channel in channels:
+                if not voice_chat.check_if_in_vc(self):
+                    break
+                if (await voice_chat.should_leave_vc(channel=channel)):
+                    await voice_chat.leave(self, channel.id)
+        else:
+            for channel in channels:
+                if voice_chat.check_if_in_vc(self):
+                    break
+                if (await voice_chat.should_join_vc(channel=channel)):
+                    await voice_chat.join(self, channel.id)
+                
 
     # Received message
     async def on_message(self, message:discord.Message):
@@ -125,13 +155,13 @@ class CababasBot(discord.Client):
                 return
             
             if is_dm:
-                await message.reply('sowwy :( no dms pls',delete_after=5.0)
                 self.debounce.remove(sender.id)
+                await message.reply('sowwy :( no dms pls',delete_after=5.0)
                 return
             
             if not self.enabled:
-                await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 self.debounce.remove(sender.id)
+                await message.reply('sowwy :( commands disable rn',delete_after=5.0)
                 return
 
             async with channel.typing():
@@ -142,8 +172,9 @@ class CababasBot(discord.Client):
                 else:
                     await message.reply(response,mention_author=False,delete_after=10.0) 
         except Exception as e:
+             self.debounce.remove(sender.id)
              await message.reply(f'`bad error occurred {choice(faces.CONFUSED)}`',mention_author=False)
-             cons.error(str(e))       
+             cons.error(str(e))
            
         self.debounce.remove(sender.id)
         
@@ -161,9 +192,7 @@ class CababasBot(discord.Client):
                 }
         )
         async def toggle_commands(interaction:discord.Interaction, choice:bool):
-            if not await self.check_flags(interaction,True): return
-            self.debounce.append(interaction.user.id)
-            
+            if not await self.check_flags(interaction,True): return            
             try:
                 self.enabled = choice
 
@@ -172,9 +201,7 @@ class CababasBot(discord.Client):
             except Exception as e:
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')
                 cons.error(str(e))
-            
-            self.debounce.remove(interaction.user.id)
-            
+                        
         @self.tree.command(
                 name='toggle-commands-ai',
                 description='Toggle AI on/off GLOBALLY. Only selected users are allowed to user this.',
@@ -185,9 +212,7 @@ class CababasBot(discord.Client):
                 }
         )
         async def toggle_commands_ai(interaction:discord.Interaction, choice:bool):
-            if not await self.check_flags(interaction,True): return
-            self.debounce.append(interaction.user.id)
-            
+            if not await self.check_flags(interaction,True): return            
             try:
                 await os_manager.resources.settings.ai_settings.set_enabled(choice)
 
@@ -196,9 +221,7 @@ class CababasBot(discord.Client):
             except Exception as e:
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
                 cons.error(str(e))
-                
-            self.debounce.remove(interaction.user.id)
-            
+                            
         @self.tree.command(
                 name='backup-resources',
                 description='Create a backup. Only selected users are allowed to user this.',
@@ -209,17 +232,13 @@ class CababasBot(discord.Client):
         )
         async def backup_resources(interaction:discord.Interaction, dm:bool|None=False):
             if not await self.check_flags(interaction,True): return
-            user = interaction.user
-            self.debounce.append(user.id)
-            
+            user = interaction.user            
             try:
                 await self.command_backup_resource(interaction,dm)
             except Exception as e:
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
                 cons.error(str(e))
-            
-            self.debounce.remove(interaction.user.id)
-            
+                        
         @self.tree.command(
                 name='join-voice',
                 description='Join a voice channel. Only selected users are allowed to user this.',
@@ -232,51 +251,70 @@ class CababasBot(discord.Client):
             if not await self.check_flags(interaction,True): return
             self.debounce.append(interaction.user.id)
             
-            if (len(self.voice_clients) > 0):
-                await interaction.response.send_message(f'me alweady in voice channel {choice(faces.SAD)}',ephemeral=True)   
+            if voice_chat.check_if_in_vc(self):
                 self.debounce.remove(interaction.user.id)
+                await interaction.response.send_message(f'me alweady in voice channel {choice(faces.SAD)}',ephemeral=True)   
                 return
             
             channel_id:int
             try:
                 channel_id = int(channel_id)
             except Exception:
-                await interaction.response.send_message(f'pls give valid id {choice(faces.SAD)}',ephemeral=True)  
                 self.debounce.remove(interaction.user.id)
+                await interaction.response.send_message(f'pls give valid id {choice(faces.SAD)}',ephemeral=True)  
                 return
-            
             try:
-                await self.get_channel(channel_id).connect(self_mute=True)
+                await voice_chat.join(self, channel_id)
                 await interaction.response.send_message(f'joined {choice(faces.HAPPY)}',ephemeral=True)  
             except Exception as e:
+                self.debounce.remove(interaction.user.id)
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}` {str(e)}',ephemeral=True)   
-                cons.error(str(e))
+                cons.error(f'Error while joining a voice channel: {str(e)}')
+                return
                 
             self.debounce.remove(interaction.user.id)
             
         @self.tree.command(
-                name='leave-voice',
-                description='Leave a voice channel. Only selected users are allowed to user this.',
+                name='clear-debounce',
+                description='Clears the debounce list. Only selected users are allowed to user this.',
                 guilds=developer_guilds
         )
-        async def leave_voice(interaction:discord.Interaction):
+        async def clear_debounce(interaction:discord.Interaction):            
+            self.debounce.clear()
+            cons.log(f'Debounce cleared by {interaction.user.name} ({interaction.user.id})')
+            await interaction.response.send_message(f'cleared debounce! {choice(faces.HAPPY)}',ephemeral=True)  
+            
+        @self.tree.command(
+                name='leave-voice',
+                description='Leave a voice channel. Only selected users are allowed to user this.',
+                guilds=developer_guilds,
+                extras={
+                    "id"
+                }
+        )
+        async def leave_voice(interaction:discord.Interaction,id:str|None=""):
             if not await self.check_flags(interaction,True): return
             self.debounce.append(interaction.user.id)
             
-            if (len(self.voice_clients) <= 0):
+            if not voice_chat.check_if_in_vc(self):
                 await interaction.response.send_message(f'me not in voice channel {choice(faces.SAD)}',ephemeral=True)   
                 self.debounce.remove(interaction.user.id)
                 return
             
+            channel_id = None
             try:
-                for vc_client in self.voice_clients:
-                    if vc_client != None:
-                        vc_client.cleanup()
-                    await vc_client.disconnect()
+                channel_id = int(id)
+            except Exception:
+                channel_id = None
+            
+            try:
+                await voice_chat.leave(self, channel_id)
                 await interaction.response.send_message(f'left {choice(faces.HAPPY)}',ephemeral=True)  
             except Exception as e:
-                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`',ephemeral=True)   
+                self.debounce.remove(interaction.user.id)
+                await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}` {str(e)}',ephemeral=True)   
                 cons.error(str(e))
+                return
                 
             self.debounce.remove(interaction.user.id)
 
@@ -307,8 +345,10 @@ class CababasBot(discord.Client):
                 rank = await rng.get_user_rank(user.id)
                 await interaction.response.send_message(f'<@{user.id}> rank is `{rank}` ({chance_to_string(rng.get_chance(rank)*100)}%)', ephemeral=True,silent=True)    
             except Exception as e:
+                self.debounce.remove(interaction.user.id)
                 await interaction.response.send_message(f'someting go wrong {choice(faces.SAD)} pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while sending {user.name} ({user.id}) their RNG rank: {str(e)}')
+                return
             self.debounce.remove(interaction.user.id)
             
         @self.tree.command(
@@ -326,8 +366,10 @@ class CababasBot(discord.Client):
                 embed = await rng.browse_ranks(user.id)
                 await interaction.response.send_message(embed=embed,ephemeral=True)    
             except Exception as e:
+                self.debounce.remove(interaction.user.id)
                 await interaction.response.send_message('someting go wrong :( pls try again later', ephemeral=True, delete_after=10.0)    
                 cons.error(f'Error while {user.name} ({user.id}) was browsing RNG ranks: {str(e)}')
+                return
                 
             self.debounce.remove(user.id)
             
@@ -343,8 +385,10 @@ class CababasBot(discord.Client):
             try:
                 await interaction.response.send_message(content=LOVE_GIF) 
             except Exception as e:
+                self.debounce.remove(interaction.user.id)
                 await interaction.response.send_message(f'`bad error occurred {choice(faces.CONFUSED)}`')   
                 cons.error(str(e))
+                return
                
             self.debounce.remove(interaction.user.id)
             
@@ -364,7 +408,9 @@ class CababasBot(discord.Client):
                 pfp_img:Image = pfp.murder(victim,True if victim.id == self.user.id else False)
                 await interaction.response.send_message(content=f'<@{interaction.user.id}> make me kill <@{victim.id}> {choice(faces.SAD)}',file=pfp.image_to_file(pfp_img),silent=True)
             except Exception as e:
+                self.debounce.remove(interaction.user.id)
                 cons.error(f'Error while running murder command: {str(e)}')
+                return
                
             self.debounce.remove(interaction.user.id)
             
