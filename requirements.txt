@@ -1,6 +1,3 @@
 discord
 openai
 python-dotenv
-tiktoken
-pillow
-PyNaCl
