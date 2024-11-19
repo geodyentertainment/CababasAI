@@ -1,4 +1,6 @@
+import traceback
 from discord import Client
+
 
 BLACK = '\033[30m'
 RED = '\033[31m'
@@ -18,6 +20,7 @@ BRIGHT_CYAN = '\033[96m'
 WHITE = '\033[97m'
 RESET = '\033[0m'
 
+
 L_SUCCESS = GREEN
 L_ERROR = RED
 L_LOG = LIGHT_GRAY
@@ -25,21 +28,31 @@ L_TASK = YELLOW
 L_TASK_COMPLETED = WHITE
 L_CHARGE = BRIGHT_RED
 
+
+def get_traceback(err:Exception) -> str:
+   return ''.join(traceback.format_exception(type(err), err, err.__traceback__))
+
+
 class Logger:
-    def __init__(self, bot:Client):
-        self.bot = bot
+   def __init__(self, bot:Client):
+       self.bot = bot
 
-    def log(self, message: str) -> None:
-        print(f'{RESET}{self.bot.user.name}{WHITE}> {message}{RESET}')
 
-    def success(self, message: str) -> None:
-        print(f'{RESET}{self.bot.user.name}{L_SUCCESS}> {message}{RESET}')
+   def log(self, message: str) -> None:
+       print(f'{RESET}{self.bot.user.name}{WHITE}> {message}{RESET}')
 
-    def error(self, error_message: str) -> None:
-        print(f'{RESET}{self.bot.user.name}{L_ERROR}> {error_message}{RESET}')
 
-    def task(self, task_message: str) -> None:
-        print(f'{RESET}{self.bot.user.name}{L_TASK}> {task_message}{RESET}', end='\r', flush=True)
+   def success(self, message: str) -> None:
+       print(f'{RESET}{self.bot.user.name}{L_SUCCESS}> {message}{RESET}')
 
-    def task_completed(self, task_message: str) -> None:
-        print(f'{RESET}{self.bot.user.name}{L_TASK_COMPLETED}> {task_message}{RESET}')
+
+   def error(self, error_message: str) -> None:
+       print(f'{RESET}{self.bot.user.name}{L_ERROR}> {error_message}{RESET}')
+
+
+   def task(self, task_message: str) -> None:
+       print(f'{RESET}{self.bot.user.name}{L_TASK}> {task_message}{RESET}', end='\r', flush=True)
+
+
+   def task_completed(self, task_message: str) -> None:
+       print(f'{RESET}{self.bot.user.name}{L_TASK_COMPLETED}> {task_message}{RESET}')
