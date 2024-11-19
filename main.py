@@ -1,5 +1,2 @@
-from os_manager import environment as env
-import cababas
+import discord
 
-client = cababas.CababasBot()
-client.run(env.DISCORD_TOK)
