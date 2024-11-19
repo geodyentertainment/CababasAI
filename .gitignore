@@ -1,6 +1,4 @@
-/.venv/*
-/resources/ai
-/resources/rng
-/resources/settings.json
-/resources-backups/*
-/__pycache__/*
+/__pycache__
+/.venv
+/.env
+/config
