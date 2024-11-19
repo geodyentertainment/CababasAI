@@ -147,7 +147,6 @@ class Settings:
                print(msg)
            return Settings.DEFAULT
 
-
    class Section:
        def __init__(self,name:str):
            self.name=name
