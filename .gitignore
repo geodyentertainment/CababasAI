@@ -2,4 +2,5 @@
 /.venv
 /CababasBot/config
 /.env
+/.idea
 /__pycache__

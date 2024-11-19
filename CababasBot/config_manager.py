@@ -113,8 +113,8 @@ class Settings:
        try:
            create_file(Settings.NAME, json.dumps(Settings.DEFAULT, indent=True), logger)
 
-
            def on_invalid():
+               print("Invalid settings file. Rewriting...")
                write_file(Settings.NAME, json.dumps(Settings.DEFAULT, indent=True), logger)
                return Settings.DEFAULT
 
@@ -132,15 +132,11 @@ class Settings:
            updated = save_data.copy()
            updated.update(Settings.DEFAULT)
 
+           for section in updated:
+               updated[section].update(save_data[section])
 
-           # for section in updated:
-           #     updated[section].update(save_data[section])
-
-
-           # if not save_data == updated:
-           #     write_file(Settings.NAME, json.dumps(updated, indent=True), logger)
-           #     print("update")
-
+           if not save_data == updated:
+               write_file(Settings.NAME, json.dumps(updated, indent=True), logger)
 
            return updated
        except TypeError as e:
@@ -155,7 +151,6 @@ class Settings:
    class Section:
        def __init__(self,name:str):
            self.name=name
-
 
 try:
    mkdir(CONFIG_PATH)
