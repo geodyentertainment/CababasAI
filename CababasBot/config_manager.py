@@ -166,8 +166,5 @@ class Settings:
 
 try:
     mkdir(CONFIG_PATH)
-    default_logger.task_completed(f'Created config folder.')
 except FileExistsError:
-    default_logger.task_completed(f'Config folder already found.')
-
-# print(f'\n\n{str(Settings.get_data())}')
+    pass
