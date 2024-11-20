@@ -1,6 +1,7 @@
 import traceback
-from discord import Client
+from logging import Logger
 
+from discord import Client
 
 BLACK = '\033[30m'
 RED = '\033[31m'
@@ -20,7 +21,6 @@ BRIGHT_CYAN = '\033[96m'
 WHITE = '\033[97m'
 RESET = '\033[0m'
 
-
 L_SUCCESS = GREEN
 L_ERROR = RED
 L_LOG = LIGHT_GRAY
@@ -29,30 +29,54 @@ L_TASK_COMPLETED = WHITE
 L_CHARGE = BRIGHT_RED
 
 
-def get_traceback(err:Exception) -> str:
-   return ''.join(traceback.format_exception(type(err), err, err.__traceback__))
+def get_traceback(err: Exception) -> str:
+    return ''.join(traceback.format_exception(type(err), err, err.__traceback__))
 
 
-class Logger:
-   def __init__(self, bot:Client):
-       self.bot = bot
+class PrefixedLogger:
+    def __init__(self, prefix: str | None = ''):
+        self.prefix = prefix
 
+    def get_prefix(self) -> str:
+        return self.prefix
 
-   def log(self, message: str) -> None:
-       print(f'{RESET}{self.bot.user.name}{WHITE}> {message}{RESET}')
+    def log(self, message: str) -> None:
+        log(message, self.get_prefix())
 
+    def success(self, message: str) -> None:
+        success(message, self.get_prefix())
 
-   def success(self, message: str) -> None:
-       print(f'{RESET}{self.bot.user.name}{L_SUCCESS}> {message}{RESET}')
+    def error(self, error_message: str) -> None:
+        error(error_message, self.get_prefix())
 
+    def task(self, task_message: str) -> None:
+        task(task_message, self.get_prefix())
 
-   def error(self, error_message: str) -> None:
-       print(f'{RESET}{self.bot.user.name}{L_ERROR}> {error_message}{RESET}')
+    def task_completed(self, task_message: str) -> None:
+        task_completed(task_message, self.get_prefix())
 
+class ClientLogger(PrefixedLogger):
+    def __init__(self, client: Client | None):
+        self.client = client
+        super().__init__()
 
-   def task(self, task_message: str) -> None:
-       print(f'{RESET}{self.bot.user.name}{L_TASK}> {task_message}{RESET}', end='\r', flush=True)
+    def get_prefix(self) -> str:
+        try:
+            return f'[CLIENT] {self.client.user.name}'
+        except AttributeError:
+            return '[CLIENT] (client username not loaded yet)'
 
+def log(message: str, prefix: str | None = '') -> None:
+    print(f'{RESET}{prefix}{WHITE} > {message}{RESET}')
 
-   def task_completed(self, task_message: str) -> None:
-       print(f'{RESET}{self.bot.user.name}{L_TASK_COMPLETED}> {task_message}{RESET}')
+def success(message: str, prefix: str | None = '') -> None:
+    print(f'{RESET}{prefix}{L_SUCCESS} > {message}{RESET}')
+
+def error(error_message: str, prefix: str | None = '') -> None:
+    print(f'{RESET}{prefix}{L_ERROR} > {error_message}{RESET}')
+
+def task(task_message: str, prefix: str | None = '') -> None:
+    print(f'{RESET}{prefix}{L_TASK} > {task_message}{RESET}', end='\r', flush=True)
+
+def task_completed(task_message: str, prefix: str | None = '') -> None:
+    print(f'{RESET}{prefix}{L_TASK_COMPLETED} > {task_message}{RESET}')

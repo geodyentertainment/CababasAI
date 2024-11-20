@@ -3,158 +3,171 @@ from json import JSONDecodeError
 from os import mkdir
 from os import path
 from CababasBot.logger import get_traceback
-from CababasBot.logger import Logger
-
+from CababasBot.logger import PrefixedLogger
 
 CONFIG_PATH = 'config'
+default_logger = PrefixedLogger('CONFIG_MANAGER')
+
+def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> tuple[bool, Exception | None]:
+    folder = f'{CONFIG_PATH}/{name}'
+    try:
+        mkdir(folder)
+    except FileExistsError:
+        logger.task_completed(f'Directory {folder} already found. Did not create.')
+    except Exception as e:
+        logger.error(f'Error creating directory "{name}":\n{get_traceback(e)}')
+        return False, e
+    return True, None
 
 
-def create_folder(name:str,logger:Logger|None=None) -> tuple[bool, Exception|None]:
-   folder = f'{CONFIG_PATH}/{name}'
-   try:
-       mkdir(folder)
-   except FileExistsError:
-       msg = f'Directory {folder} already found. Did not create.'
-       if logger is Logger:
-           logger.task_completed(msg)
-       else:
-           print(msg)
-   except Exception as e:
-       msg = f'Error creating file "{name}":\n{get_traceback(e)}'
-       if logger is Logger:
-           logger.error(msg)
-       else:
-           print(msg)
-       return False, e
-   return True, None
+def create_file(name: str, content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> tuple[
+    bool, Exception | None]:
+    file_path = f'{CONFIG_PATH}/{name}'
+    try:
+        with open(file=file_path, mode='x', encoding='utf-8') as file:
+            file.write(content)
+    except FileExistsError as e:
+        logger.task_completed(f'File {file_path} already found. Did not create.')
+        return True, e
+    except Exception as e:
+        logger.error(f'Error creating file "{name}":\n{get_traceback(e)}')
+        return False, e
+    return True, None
 
 
-def create_file(name:str,content:str|None='[]',logger:Logger|None=None) -> tuple[bool, Exception|None]:
-   file_path = f'{CONFIG_PATH}/{name}'
-   try:
-       with open(file=file_path, mode='x', encoding='utf-8') as file:
-               file.write(content)
-   except FileExistsError as e:
-       msg = f'File {file_path} already found. Did not create.'
-       if logger is Logger:
-           logger.task_completed(msg)
-       else:
-           print(msg)
-       return True, e
-   except Exception as e:
-       msg = f'Error creating file "{name}":\n{get_traceback(e)}'
-       if logger is Logger:
-           logger.error(msg)
-       else:
-           print(msg)
-       return False, e
-   return True, None
+def write_file(name: str, content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> tuple[
+    bool, Exception | None]:
+    try:
+        file_path = f'{CONFIG_PATH}/{name}'
+        with open(file=file_path, mode='w', encoding='utf-8') as file:
+            file.write(content)
+    except Exception as e:
+        logger.error(f'Error creating file "{name}":\n{get_traceback(e)}')
+        return False, e
+    return True, None
 
 
-def write_file(name:str,content:str|None='[]',logger:Logger|None=None) -> tuple[bool, Exception|None]:
-   try:
-       file_path = f'{CONFIG_PATH}/{name}'
-       with open(file=file_path, mode='w', encoding='utf-8') as file:
-               file.write(content)
-   except Exception as e:
-       msg = f'Error creating file "{name}":\n{get_traceback(e)}'
-       if logger is Logger:
-           logger.error(msg)
-       else:
-           print(msg)
-       return False, e
-   return True, None
-
-
-def read_file(name:str,default_content:str|None='[]',logger:Logger|None=None) -> str:
-   file_path = f'{CONFIG_PATH}/{name}'
-   try:
-       if path.exists(file_path):
-           with open(file=file_path, mode='r', encoding='utf-8') as file:
-               return file.read()
-   except Exception as e:
-       msg = f'Error creating file "{name}": {str(e)}\n{get_traceback(e)}'
-       if logger is Logger:
-           logger.error(msg)
-       else:
-           print(msg)
-       return default_content
+def read_file(name: str, default_content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> str:
+    file_path = f'{CONFIG_PATH}/{name}'
+    try:
+        if path.exists(file_path):
+            with open(file=file_path, mode='r', encoding='utf-8') as file:
+                return file.read()
+    except Exception as e:
+        logger.error(f'Error creating file "{name}": {str(e)}\n{get_traceback(e)}')
+        return default_content
 
 
 class Settings:
-   NAME = 'settings.json'
-   DEFAULT:dict[str, dict[str, any]] = {
-       'discord': {
-           'enabled': True,
-           'managers': {
-               'Geody': 775117392644407296,
-               'Wallibe': 1164735044200435734
-           },
-           'commands_whitelisted_guilds':{},
-           'ai_whitelisted_guilds':{},
-       },
-       'ai_settings': {
-           'enabled': False,
-           'history_memory': 11,
-           'temperature': 0.79,
-           'top_p': 1,
-           'logit_bias': {'1734': -100},
-           'seed': 572875094,
-           'get_max_prompt_tokens': 40,
-           'max_completion_tokens': 20,
-           'frequency_penalty': 0,
-           'presence_penalty': 0
-       }
-   }
+    SEC_DISCORD = 'discord'
+    KEY_ENABLED = 'enabled'
+    KEY_MANAGERS = 'managers'
+    KEY_COMMANDS_WHITELIST = 'commands_whitelisted_guilds'
+    KEY_AI_WHITELIST = 'ai_whitelisted_guilds'
 
+    SEC_AI = 'ai'
+    KEY_HISTORY_MEM = 'history_memory'
+    KEY_TEMP = 'temperature'
+    KEY_TOP_P = 'top_p'
+    KEY_LOGIT_BIAS = 'logit_bias'
+    KEY_SEED = 'seed'
+    KEY_MAX_PROMPT_TOK = 'get_max_prompt_tokens'
+    KEY_MAX_COMP_TOK = 'max_completion_tokens'
+    KEY_FREQ_PENALTY = 'frequency_penalty'
+    KEY_PRES_PENALTY = 'presence_penalty'
 
-   @staticmethod
-   def get_data(logger:Logger|None=None) -> dict:
-       try:
-           create_file(Settings.NAME, json.dumps(Settings.DEFAULT, indent=True), logger)
+    SAVE_NAME = 'settings.json'
+    SAVE_DEFAULT: dict[str, dict[str, any]] = {
+        SEC_DISCORD: {
+            KEY_ENABLED: True,
+            KEY_MANAGERS: {
+                'Geody': 775117392644407296,
+                'Wallibe': 1164735044200435734
+            },
+            KEY_COMMANDS_WHITELIST: {},
+            KEY_AI_WHITELIST: {},
+        },
+        SEC_AI: {
+            KEY_ENABLED: False,
+            KEY_HISTORY_MEM: 11,
+            KEY_TEMP: 0.79,
+            KEY_TOP_P: 1,
+            KEY_LOGIT_BIAS: {'1734': -100},
+            KEY_SEED: 572875094,
+            KEY_MAX_PROMPT_TOK: 40,
+            KEY_MAX_COMP_TOK: 20,
+            KEY_FREQ_PENALTY: 0,
+            KEY_PRES_PENALTY: 0
+        }
+    }
 
-           def on_invalid():
-               print("Invalid settings file. Rewriting...")
-               write_file(Settings.NAME, json.dumps(Settings.DEFAULT, indent=True), logger)
-               return Settings.DEFAULT
+    @staticmethod
+    def get_data(logger: PrefixedLogger | None = default_logger) -> dict:
+        try:
+            create_file(Settings.SAVE_NAME, json.dumps(Settings.SAVE_DEFAULT, indent=True), logger)
 
+            def on_invalid():
+                write_file(Settings.SAVE_NAME, json.dumps(Settings.SAVE_DEFAULT, indent=True), logger)
+                return Settings.SAVE_DEFAULT
 
-           try:
-               save_data = json.loads(read_file(Settings.NAME, logger=logger))
-           except JSONDecodeError:
-               return on_invalid()
+            try:
+                save_data = json.loads(read_file(Settings.SAVE_NAME, logger=logger))
+            except JSONDecodeError:
+                return on_invalid()
 
+            if not isinstance(save_data, dict):  # File was invalid...
+                return on_invalid()
 
-           if not isinstance(save_data, dict):  # File was invalid...
-               return on_invalid()
+            updated = save_data.copy()
+            updated.update(Settings.SAVE_DEFAULT)
 
+            for section in updated:
+                if section in save_data:
+                    updated[section].update(save_data[section])
 
-           updated = save_data.copy()
-           updated.update(Settings.DEFAULT)
+            if not save_data == updated:
+                write_file(Settings.SAVE_NAME, json.dumps(updated, indent=True), logger)
 
-           for section in updated:
-               updated[section].update(save_data[section])
+            return updated
+        except TypeError as e:
+            logger.error(f'TypeError getting settings data:\n{get_traceback(e)}')
+            return Settings.SAVE_DEFAULT
 
-           if not save_data == updated:
-               write_file(Settings.NAME, json.dumps(updated, indent=True), logger)
+    @staticmethod
+    def get_section(name: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> dict:
+        data = settings_data if settings_data is not None else Settings.get_data(logger)
+        section_data = {}
 
-           return updated
-       except TypeError as e:
-           msg = f'TypeError getting settings data:\n{get_traceback(e)}'
-           if logger is Logger:
-               logger.error(msg)
-           else:
-               print(msg)
-           return Settings.DEFAULT
+        if name in data:
+            section_data = data[name]
+        elif name in Settings.SAVE_DEFAULT:
+            section_data = Settings.SAVE_DEFAULT[name]
+            logger.error(f'Section "{name}" not found in save file. Using default section.')
+        else:
+            logger.error(f'Section "{name}" not found in settings.')
 
-   class Section:
-       def __init__(self,name:str):
-           self.name=name
+        if isinstance(section_data, dict):
+            return section_data
+
+        return {}
+
+    @staticmethod
+    def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> bool | int | dict | None:
+        section = Settings.get_section(section_name, logger, settings_data)
+        key_data = None
+
+        if key in section:
+            key_data = section[key]
+        else:
+            logger.error(f'Could not find key "{key}" in section "{section_name}"')
+
+        return key_data
+
 
 try:
-   mkdir(CONFIG_PATH)
+    mkdir(CONFIG_PATH)
+    default_logger.task_completed(f'Created config folder.')
 except FileExistsError:
-   print(f'Config file already found.')
+    default_logger.task_completed(f'Config folder already found.')
 
-
-print(f'\n\n{str(Settings.get_data())}')
+# print(f'\n\n{str(Settings.get_data())}')
