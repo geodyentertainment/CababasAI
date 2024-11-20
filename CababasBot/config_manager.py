@@ -142,7 +142,7 @@ class Settings:
 
 
     @staticmethod
-    def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> bool | int | dict | None:
+    def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> bool | int | dict | list | None:
         save_data = settings_data if settings_data is not None else Settings.get_data(logger)
         key_data = None
 
