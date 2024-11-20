@@ -1,7 +1,9 @@
 import traceback
 from logging import Logger
 
-from discord import Client
+from discord import Client, TextChannel, HTTPException, Forbidden
+
+from CababasBot.secrets import ERROR_CHANNEL_ID
 
 BLACK = '\033[30m'
 RED = '\033[31m'
@@ -28,7 +30,6 @@ L_TASK = YELLOW
 L_TASK_COMPLETED = WHITE
 L_CHARGE = BRIGHT_RED
 
-
 def get_traceback(err: Exception) -> str:
     return ''.join(traceback.format_exception(type(err), err, err.__traceback__))
 
@@ -40,19 +41,19 @@ class PrefixedLogger:
     def get_prefix(self) -> str:
         return self.prefix
 
-    def log(self, message: str) -> None:
+    async def log(self, message: str) -> None:
         log(message, self.get_prefix())
 
-    def success(self, message: str) -> None:
+    async def success(self, message: str) -> None:
         success(message, self.get_prefix())
 
-    def error(self, error_message: str) -> None:
+    async def error(self, error_message: str, *argv) -> None:
         error(error_message, self.get_prefix())
 
-    def task(self, task_message: str) -> None:
+    async def task(self, task_message: str) -> None:
         task(task_message, self.get_prefix())
 
-    def task_completed(self, task_message: str) -> None:
+    async def task_completed(self, task_message: str) -> None:
         task_completed(task_message, self.get_prefix())
 
 class ClientLogger(PrefixedLogger):
@@ -65,6 +66,29 @@ class ClientLogger(PrefixedLogger):
             return f'[CLIENT] {self.client.user.name}'
         except AttributeError:
             return '[CLIENT] (client username not loaded yet)'
+
+    async def error(self, error_message: str, silent:bool|None=False) -> None:
+        await super().error(error_message)
+        if not silent:
+            try:
+                channel_id = int(ERROR_CHANNEL_ID)
+            except TypeError:
+                await super().error(f'Error channel ID {ERROR_CHANNEL_ID} is not numeric, could not be converted to int.')
+                return
+
+            try:
+                channel = self.client.get_channel(channel_id)
+                if not isinstance(channel, TextChannel):
+                    await super().error(f'Incorrect error channel type {type(channel)}. {TextChannel} required.')
+                    return
+
+                await channel.send(content=f'```\n{error_message}\n```')
+            except Forbidden:
+                error(f'Please check that "{self.get_prefix()}" has permissions to send messages in the error channel {channel_id}.')
+            except HTTPException as e:
+                error(f'Failed to send error to error channel: {get_traceback(e)}')
+
+
 
 def log(message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{WHITE} > {message}{RESET}')
