@@ -64,7 +64,6 @@ class Cababas(Client):
         for guild_id in whitelist.values():
             try:
                 result.append((await self.fetch_guild(guild_id)))
-                raise Exception('Test exception')
             except NotFound:
                 pass
             except HTTPException as e:
