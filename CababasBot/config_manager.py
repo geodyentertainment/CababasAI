@@ -8,12 +8,12 @@ from CababasBot.logger import PrefixedLogger
 CONFIG_PATH = 'config'
 default_logger = PrefixedLogger('CONFIG_MANAGER')
 
-def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> tuple[bool, Exception | None]:
+def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> tuple[bool, FileExistsError|Exception | None]:
     folder = f'{CONFIG_PATH}/{name}'
     try:
         mkdir(folder)
-    except FileExistsError:
-        logger.task_completed(f'Directory {folder} already found. Did not create.')
+    except FileExistsError as e:
+        return False, e
     except Exception as e:
         logger.error(f'Error creating directory "{name}":\n{get_traceback(e)}')
         return False, e
@@ -21,14 +21,13 @@ def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> 
 
 
 def create_file(name: str, content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> tuple[
-    bool, Exception | None]:
+    bool, FileExistsError|Exception | None]:
     file_path = f'{CONFIG_PATH}/{name}'
     try:
         with open(file=file_path, mode='x', encoding='utf-8') as file:
             file.write(content)
     except FileExistsError as e:
-        logger.task_completed(f'File {file_path} already found. Did not create.')
-        return True, e
+        return False, e
     except Exception as e:
         logger.error(f'Error creating file "{name}":\n{get_traceback(e)}')
         return False, e
@@ -134,36 +133,61 @@ class Settings:
             return Settings.SAVE_DEFAULT
 
     @staticmethod
-    def get_section(name: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> dict:
-        data = settings_data if settings_data is not None else Settings.get_data(logger)
-        section_data = {}
+    def set_data(data:dict, logger:PrefixedLogger|None=default_logger) -> tuple[bool,Exception|None]:
+        try:
+            write_file(Settings.SAVE_NAME, json.dumps(Settings.SAVE_DEFAULT, indent=True), logger)
+        except Exception as e:
+            return False, e
+        return True, None
 
-        if name in data:
-            section_data = data[name]
-        elif name in Settings.SAVE_DEFAULT:
-            section_data = Settings.SAVE_DEFAULT[name]
-            logger.error(f'Section "{name}" not found in save file. Using default section.')
-        else:
-            logger.error(f'Section "{name}" not found in settings.')
-
-        if isinstance(section_data, dict):
-            return section_data
-
-        return {}
 
     @staticmethod
     def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> bool | int | dict | None:
-        section = Settings.get_section(section_name, logger, settings_data)
+        save_data = settings_data if settings_data is not None else Settings.get_data(logger)
         key_data = None
+
+        if section_name in save_data:
+            section = save_data[section_name]
+        elif section_name in Settings.SAVE_DEFAULT:
+            section = Settings.SAVE_DEFAULT[section_name]
+            logger.error(f'Section "{section_name}" found in save default instead of save file while getting key value..')
+        else:
+            logger.error(f'Could not find section "{section_name}"')
+            return None
+
+        if not isinstance(section, dict):
+            logger.error(f'Section "{section_name}" is not dict while getting key value.')
+            return None
 
         if key in section:
             key_data = section[key]
         else:
-            logger.error(f'Could not find key "{key}" in section "{section_name}"')
+            logger.error(f'Could not find key "{key}" in section "{section_name}" while getting key value.')
 
         return key_data
 
+    @staticmethod
+    def set_key_data(section_name: str, key: str, value:bool|int|str|dict, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> tuple[bool, FileNotFoundError|TypeError|None]:
+        new_save = settings_data.copy() if settings_data is not None else Settings.get_data(logger)
 
+        if section_name not in new_save:
+            logger.error(f'Could not find section "{section_name}" while setting key value.')
+            return False, FileNotFoundError(f'Could not find section "{section_name}" while setting key value.')
+
+        if not isinstance(new_save[section_name], dict):
+            logger.error(f'Section "{section_name}" is not dict while setting key value.')
+            return False, TypeError(f'Section "{section_name}" is not dict while setting key value.')
+
+        if key not in new_save[section_name]:
+            logger.error(f'Could not find key "{key}" in section "{section_name}" while setting key value.')
+            return False, FileNotFoundError(f'Could not find key "{key}" in section "{section_name}" while setting key value.')
+
+        if not isinstance(new_save[section_name][key], type(value)):
+            logger.error(f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
+            return False, TypeError(f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
+
+        new_save[section_name][key] = value
+        return Settings.set_data(new_save, logger)
 try:
     mkdir(CONFIG_PATH)
 except FileExistsError:
