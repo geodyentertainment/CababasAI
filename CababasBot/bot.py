@@ -136,8 +136,8 @@ class Cababas(Client):
         )
         @choices(
             section=[
-                Choice(name="Discord", value=Settings.SEC_DISCORD),
-                Choice(name="AI", value=Settings.SEC_AI)
+                Choice(name="Discord (section)", value=Settings.SEC_DISCORD),
+                Choice(name="AI (section)", value=Settings.SEC_AI)
             ]
         )
         async def toggle_discord_enabled(interaction:Interaction,section:str|None,value:bool|None):
@@ -157,6 +157,7 @@ class Cababas(Client):
             try:
                 if success:
                     await interaction.response.send_message(content=f'Set {section} status to `{value}`',ephemeral=True)
+                    await self.log.log(f'Set {section} status to `{value}`')
                 else:
                     await interaction.response.send_message(content=f'Unable to set {section} status to `{value}`. Check logs for any errors.',ephemeral=True)
             except InteractionResponded:
@@ -212,7 +213,7 @@ class Cababas(Client):
             try:
                 result.append((await self.fetch_guild(guild_id)))
             except NotFound:
-                pass
+                await self.log.error(f'[WARNING]: Could not fetch whitelisted guild {key}: {guild_id}, check that the bot is in this guild!',silent=True)
             except HTTPException as e:
                 await self.log.error(f'Failed to fetch whitelisted guild {key}-{guild_id} due to HTTP error: {get_traceback(e)}')
             except Exception as e:
