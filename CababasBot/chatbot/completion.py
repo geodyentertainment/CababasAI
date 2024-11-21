@@ -4,7 +4,7 @@ from openai import OpenAI, Stream
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
 
 from CababasBot import env_secrets
-from CababasBot.config_manager import Settings
+from CababasBot.config_manager import Settings, AI
 from CababasBot.logger import PrefixedLogger
 
 client = OpenAI(
@@ -26,15 +26,3 @@ async def generate_completion(history:list[dict[str,str]],logger:PrefixedLogger|
         frequency_penalty=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_FREQ_PENALTY, logger, settings_config),
         presence_penalty=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_PRES_PENALTY, logger, settings_config)
     )
-
-if __name__ == "__main__":
-    print("Running tester:")
-    comp = asyncio.run(generate_completion(
-        [
-            {
-                'role':'user',
-                'content':'hello?'
-            }
-        ]
-    ))
-    print(comp.choices[0].message.content)

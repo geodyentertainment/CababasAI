@@ -1,3 +1,4 @@
+import asyncio
 import json
 from json import JSONDecodeError
 from os import mkdir
@@ -8,12 +9,14 @@ from CababasBot.logger import PrefixedLogger
 CONFIG_PATH = 'config'
 default_logger = PrefixedLogger('CONFIG_MANAGER')
 
-async def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> tuple[bool, FileExistsError|Exception | None]:
+
+async def create_folder(name: str, logger: PrefixedLogger | None = default_logger) -> tuple[
+    bool, FileExistsError | Exception | None]:
     folder = f'{CONFIG_PATH}/{name}'
     try:
         mkdir(folder)
     except FileExistsError as e:
-        return False, e
+        return True, e
     except Exception as e:
         await logger.error(f'Error creating directory "{name}":\n{get_traceback(e)}')
         return False, e
@@ -21,13 +24,13 @@ async def create_folder(name: str, logger: PrefixedLogger | None = default_logge
 
 
 async def create_file(name: str, content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> tuple[
-    bool, FileExistsError|Exception | None]:
+    bool, FileExistsError | Exception | None]:
     file_path = f'{CONFIG_PATH}/{name}'
     try:
         with open(file=file_path, mode='x', encoding='utf-8') as file:
             file.write(content)
     except FileExistsError as e:
-        return False, e
+        return True, e
     except Exception as e:
         await logger.error(f'Error creating file "{name}":\n{get_traceback(e)}')
         return False, e
@@ -41,12 +44,13 @@ async def write_file(name: str, content: str | None = '[]', logger: PrefixedLogg
         with open(file=file_path, mode='w', encoding='utf-8') as file:
             file.write(content)
     except Exception as e:
-        await logger.error(f'Error creating file "{name}":\n{get_traceback(e)}')
+        await logger.error(f'Error writing "{content}" to file "{name}":\n{get_traceback(e)}')
         return False, e
     return True, None
 
 
-async def read_file(name: str, default_content: str | None = '[]', logger: PrefixedLogger | None = default_logger) -> str:
+async def read_file(name: str, default_content: str | None = '[]',
+                    logger: PrefixedLogger | None = default_logger) -> str:
     file_path = f'{CONFIG_PATH}/{name}'
     try:
         if path.exists(file_path):
@@ -55,6 +59,7 @@ async def read_file(name: str, default_content: str | None = '[]', logger: Prefi
     except Exception as e:
         await logger.error(f'Error creating file "{name}": {str(e)}\n{get_traceback(e)}')
         return default_content
+    return default_content
 
 
 class Settings:
@@ -64,7 +69,6 @@ class Settings:
     KEY_COMMANDS_WHITELIST = 'commands_whitelisted_guilds'
     KEY_COMMANDS_ADMIN = 'commands_admin_guilds'
     KEY_AI_WHITELIST = 'ai_whitelisted_guilds'
-    KEY_ERROR_CHANNEL = 'error_channel'
 
     SEC_AI = 'chatbot'
     KEY_HISTORY_MEM = 'history_memory'
@@ -87,8 +91,7 @@ class Settings:
             },
             KEY_COMMANDS_WHITELIST: {},
             KEY_COMMANDS_ADMIN: {},
-            KEY_AI_WHITELIST: {},
-            KEY_ERROR_CHANNEL: 1249121134398668951
+            KEY_AI_WHITELIST: {}
         },
         SEC_AI: {
             KEY_ENABLED: False,
@@ -137,16 +140,16 @@ class Settings:
             return Settings.SAVE_DEFAULT
 
     @staticmethod
-    async def set_data(data:dict, logger:PrefixedLogger|None=default_logger) -> tuple[bool,Exception|None]:
+    async def set_data(data: dict, logger: PrefixedLogger | None = default_logger) -> tuple[bool, Exception | None]:
         try:
             await write_file(Settings.SAVE_NAME, json.dumps(Settings.SAVE_DEFAULT, indent=True), logger)
         except Exception as e:
             return False, e
         return True, None
 
-
     @staticmethod
-    async def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> bool | int | dict | list | None:
+    async def get_key_data(section_name: str, key: str, logger: PrefixedLogger | None = default_logger,
+                           settings_data: dict | None = None) -> bool | int | dict | list | None:
         save_data = settings_data if settings_data is not None else (await Settings.get_data(logger))
         key_data = None
 
@@ -154,7 +157,8 @@ class Settings:
             section = save_data[section_name]
         elif section_name in Settings.SAVE_DEFAULT:
             section = Settings.SAVE_DEFAULT[section_name]
-            await logger.error(f'Section "{section_name}" found in save default instead of save file while getting key value..')
+            await logger.error(
+                f'Section "{section_name}" found in save default instead of save file while getting key value..')
         else:
             await logger.error(f'Could not find section "{section_name}"')
             return None
@@ -171,7 +175,9 @@ class Settings:
         return key_data
 
     @staticmethod
-    async def set_key_data(section_name: str, key: str, value:bool|int|str|dict, logger: PrefixedLogger | None = default_logger, settings_data: dict | None=None) -> tuple[bool, FileNotFoundError|TypeError|None]:
+    async def set_key_data(section_name: str, key: str, value: bool | int | str | dict,
+                           logger: PrefixedLogger | None = default_logger, settings_data: dict | None = None) -> tuple[
+        bool, FileNotFoundError | TypeError | None]:
         new_save = settings_data.copy() if settings_data is not None else (await Settings.get_data(logger))
 
         if section_name not in new_save:
@@ -184,14 +190,71 @@ class Settings:
 
         if key not in new_save[section_name]:
             await logger.error(f'Could not find key "{key}" in section "{section_name}" while setting key value.')
-            return False, FileNotFoundError(f'Could not find key "{key}" in section "{section_name}" while setting key value.')
+            return False, FileNotFoundError(
+                f'Could not find key "{key}" in section "{section_name}" while setting key value.')
 
         if not isinstance(new_save[section_name][key], type(value)):
-            await logger.error(f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
-            return False, TypeError(f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
+            await logger.error(
+                f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
+            return False, TypeError(
+                f'Key "{key}" in section "{section_name}" ({type(new_save[section_name][key])}) does not match type {type(value)} of the new value {value}.')
 
         new_save[section_name][key] = value
         return await Settings.set_data(new_save, logger)
+
+
+class AI:
+    AI_FOLDER = 'AI'
+    HISTORY_FOLDER = 'histories'
+
+    @staticmethod
+    async def create_folder(name: str | None = None, logger: PrefixedLogger | None = default_logger):
+        ai_folder_creation = await create_folder(AI.AI_FOLDER, logger)
+        if name is None:
+            return ai_folder_creation
+        return await create_folder(f'{AI.AI_FOLDER}/{name}', logger)
+
+    @staticmethod
+    async def create_file(name: str, content: str, logger: PrefixedLogger | None = None):
+        await AI.create_folder(logger=logger)
+        return await create_file(f'{AI.AI_FOLDER}/{name}', content, logger)
+
+    @staticmethod
+    async def write_file(name: str, content: str | None = '[]', logger: PrefixedLogger | None = None):
+        await AI.create_folder(logger=logger)
+        return await write_file(f'{AI.AI_FOLDER}/{name}', content, logger)
+
+    @staticmethod
+    async def read_file(name: str, default_content: str | None = '[]', logger: PrefixedLogger | None = None):
+        await AI.create_folder(logger=logger)
+        return await read_file(f'{AI.AI_FOLDER}/{name}', default_content, logger)
+
+    @staticmethod
+    async def get_system(logger: PrefixedLogger | None = None) -> str:
+        await AI.create_file('system', '', logger)
+        return await AI.read_file('system', '', logger)
+
+    @staticmethod
+    async def write_history(history_id: int, history: list[dict[str, str]],
+                            logger: PrefixedLogger | None = default_logger):
+        await AI.create_folder(AI.HISTORY_FOLDER, logger)
+        try:
+            return await AI.write_file(f'{AI.HISTORY_FOLDER}/h-{str(history_id)}.json',
+                                       json.dumps(obj=history, indent=True), logger)
+        except Exception as e:
+            await logger.error(f'Could not write history ({history_id}): {get_traceback(e)}')
+            return False, e
+
+    @staticmethod
+    async def get_history(history_id: int, logger: PrefixedLogger | None = default_logger) -> list[dict[str, str]]:
+        await AI.create_folder(AI.HISTORY_FOLDER, logger)
+        try:
+            return json.loads(await AI.read_file(f'{AI.HISTORY_FOLDER}/h-{str(history_id)}.json', '[]', logger))
+        except Exception as e:
+            await logger.error(f'Could not read history ({history_id}): {get_traceback(e)}')
+            return []
+
+
 try:
     mkdir(CONFIG_PATH)
 except FileExistsError:
