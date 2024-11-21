@@ -80,6 +80,9 @@ class Settings:
     KEY_MAX_COMP_TOK = 'max_completion_tokens'
     KEY_FREQ_PENALTY = 'frequency_penalty'
     KEY_PRES_PENALTY = 'presence_penalty'
+    KEY_PROMPT_COST = 'prompt_cost_per_token'
+    KEY_COMP_COST = 'completion_cost_per_token'
+    KEY_AI_PREFIX = 'ai-prefix'
 
     SAVE_NAME = 'settings.json'
     SAVE_DEFAULT: dict[str, dict[str, any]] = {
@@ -91,7 +94,8 @@ class Settings:
             },
             KEY_COMMANDS_WHITELIST: {},
             KEY_COMMANDS_ADMIN: {},
-            KEY_AI_WHITELIST: {}
+            KEY_AI_WHITELIST: {},
+            KEY_AI_PREFIX: 'cab'
         },
         SEC_AI: {
             KEY_ENABLED: False,
@@ -103,7 +107,9 @@ class Settings:
             KEY_MAX_PROMPT_TOK: 40,
             KEY_MAX_COMP_TOK: 20,
             KEY_FREQ_PENALTY: 0,
-            KEY_PRES_PENALTY: 0
+            KEY_PRES_PENALTY: 0,
+            KEY_PROMPT_COST: (0.003 / 1000),
+            KEY_COMP_COST: (0.012 / 1000)
         }
     }
 
@@ -170,7 +176,7 @@ class Settings:
         if key in section:
             key_data = section[key]
         else:
-            await logger.error(f'Could not find key "{key}" in section "{section_name}" while getting key value.')
+            await logger.error(f'Could not find key "{key}" in section "{section_name}".')
 
         return key_data
 

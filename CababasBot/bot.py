@@ -1,11 +1,9 @@
-import discord
-from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, InteractionResponse, Interaction, User
-from discord.app_commands import CommandTree
+from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, User, Message
+from discord.app_commands import CommandTree, choices, Choice
 from discord.ext import commands
 
 from CababasBot import activities
 from CababasBot.config_manager import Settings
-from CababasBot.chatbot import completion
 from CababasBot.logger import BRIGHT_GREEN, BRIGHT_RED, L_LOG, get_traceback, ClientLogger
 
 
@@ -40,6 +38,28 @@ class Cababas(Client):
             await self.log.error(f'Could not set up commands: {get_traceback(e)}')
         await self.change_presence(status=Status.idle, activity=activities.PlayingWithFood())
         self.ready = True
+
+    async def on_message(self, message:Message):
+        config = await Settings.get_data(self.log)
+
+        content = message.content
+        sender = message.author
+
+        if sender.id == self.user.id:
+            return
+
+        if not isinstance(content, str):
+            return
+
+        chatbot_prefix = await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_AI_PREFIX, self.log, config)
+        if not isinstance(chatbot_prefix, str):
+            chatbot_prefix = 'cab'
+        else:
+            chatbot_prefix = chatbot_prefix.lower()
+
+        if (self.ready == True) and (content.lower().startswith(f'{chatbot_prefix} ')) and (await Settings.get_key_data(Settings.SEC_AI,Settings.KEY_ENABLED,self.log,config) == True) and (await Settings.get_key_data(Settings.SEC_DISCORD,Settings.KEY_ENABLED,self.log,config) == True):
+            content = content[len(chatbot_prefix)+1:]
+
 
     async def setup_commands(self):
         self.whitelisted_guilds = await self.get_whitelisted_guilds()
@@ -110,30 +130,35 @@ class Cababas(Client):
             return True
 
         @self.tree.command(
-            name='toggle-discord-enabled',
-            description='Enable / Disable the bot\'s commands. (only accessible by managers)',
-            guilds=self.admin_guilds,
-            extras={
-                'on':True,
-                'off':False
-            }
+            name='toggle-section',
+            description='Enable / Disable a section. (only accessible by managers)',
+            guilds=self.admin_guilds
         )
-        async def toggle_discord_enabled(interaction:Interaction,choice:bool|None):
+        @choices(
+            section=[
+                Choice(name="Discord", value=Settings.SEC_DISCORD),
+                Choice(name="AI", value=Settings.SEC_AI)
+            ]
+        )
+        async def toggle_discord_enabled(interaction:Interaction,section:str|None,value:bool|None):
             if not (await check_flags(interaction=interaction,check_manager=True)):
                 return
 
-            if choice is None:
-                current_state = await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_ENABLED, self.log)
+            if section is None:
+                section = Settings.SEC_DISCORD
+
+            if value is None:
+                current_state = await Settings.get_key_data(section, Settings.KEY_ENABLED, self.log)
                 if isinstance(current_state, bool):
-                    choice = not current_state
+                    value = not current_state
                 else:
-                    choice = False
-            success = await Settings.set_key_data(Settings.SEC_DISCORD, Settings.KEY_ENABLED, choice, self.log)
+                    value = False
+            success = await Settings.set_key_data(section, Settings.KEY_ENABLED, value, self.log)
             try:
                 if success:
-                    await interaction.response.send_message(content=f'Set bot command status to `{choice}`',ephemeral=True)
+                    await interaction.response.send_message(content=f'Set {section} status to `{value}`',ephemeral=True)
                 else:
-                    await interaction.response.send_message(content=f'Unable to set bot command status to `{choice}`. Check logs for any errors.',ephemeral=True)
+                    await interaction.response.send_message(content=f'Unable to set {section} status to `{value}`. Check logs for any errors.',ephemeral=True)
             except InteractionResponded:
                 pass
 
