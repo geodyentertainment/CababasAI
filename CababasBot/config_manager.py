@@ -62,6 +62,7 @@ class Settings:
     KEY_ENABLED = 'enabled'
     KEY_MANAGERS = 'managers'
     KEY_COMMANDS_WHITELIST = 'commands_whitelisted_guilds'
+    KEY_COMMANDS_ADMIN = 'commands_admin_guilds'
     KEY_AI_WHITELIST = 'ai_whitelisted_guilds'
     KEY_ERROR_CHANNEL = 'error_channel'
 
@@ -85,6 +86,7 @@ class Settings:
                 'Wallibe': 1164735044200435734
             },
             KEY_COMMANDS_WHITELIST: {},
+            KEY_COMMANDS_ADMIN: {},
             KEY_AI_WHITELIST: {},
             KEY_ERROR_CHANNEL: 1249121134398668951
         },

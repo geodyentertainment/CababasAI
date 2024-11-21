@@ -32,6 +32,8 @@ A `.env` file needs to be created under the main directory. This file should con
 
 `DISCORD_CABABAS_TOKEN` - Your Discord bot's token. **(do not share this)**
 
+`ERROR_CHANNEL_ID` - The ID of the channel where the bot will attempt to log errors to.
+
 Here's an example of what this might look like *(these are not real keys and IDs)*:
 
 `Located in /.../CababasAI/.env`
@@ -41,6 +43,7 @@ OPENAI_CABABAS_PROJECT=proj_HdsANFiHJFEWN83HFJNsnda
 OPENAI_CABABAS_ORGANIZATION=org-jhsDSnbwkSDkfmF
 OPENAI_CABABAS_MODEL=gpt-3.5-turbo
 DISCORD_CABABAS_TOKEN=MT3rwjSDKFoemhkn95mdsoamekgo49nDiasfesmaige
+ERROR_CHANNEL_ID=349572937591652
 ```
 
 #### Running The Startup File
