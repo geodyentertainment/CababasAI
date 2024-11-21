@@ -13,6 +13,8 @@ class Cababas(Client):
         self.log = ClientLogger(self)
         self.tree:CommandTree|None = None
         self.ready = False
+        self.whitelisted_guilds:list[Guild] = []
+        self.admin_guilds:list[Guild] = []
         intents = Intents.default()
         intents.message_content = True
         self.chatbot = commands.Bot(command_prefix='$',intents=intents)
@@ -39,19 +41,19 @@ class Cababas(Client):
         self.ready = True
 
     async def setup_commands(self):
-        whitelisted_guilds = await self.get_whitelisted_guilds()
-        admin_guilds = await self.get_admin_guilds()
+        self.whitelisted_guilds = await self.get_whitelisted_guilds()
+        self.admin_guilds = await self.get_admin_guilds()
         
-        whitelisted_guilds += admin_guilds
+        self.whitelisted_guilds += self.admin_guilds
 
         async def check_flags(interaction:Interaction,check_manager:bool|None=False,silent:bool|None=False) -> bool:
             try:
-                whitelisted_guilds = await self.get_whitelisted_guilds()
+                self.whitelisted_guilds = await self.get_whitelisted_guilds()
 
                 guild = interaction.guild
                 author = interaction.user
 
-                if (not isinstance(guild, Guild)):
+                if not isinstance(guild, Guild):
                     if not silent:
                         await interaction.response.send_message(content='Could not find guild. Please try again.',ephemeral=True)
                     return False
@@ -61,8 +63,8 @@ class Cababas(Client):
                     return False
 
                 if check_manager:
-                    admin_guilds = await self.get_admin_guilds()
-                    whitelisted_guilds += admin_guilds
+                    self.admin_guilds = await self.get_admin_guilds()
+                    self.whitelisted_guilds += self.admin_guilds
 
                     try:
                         managers:dict[str,int] = await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_MANAGERS, self.log)
@@ -74,7 +76,7 @@ class Cababas(Client):
                         await self.log.error(f'Could not get command managers: {get_traceback(e)}')
                         return False
 
-                    if guild not in admin_guilds:
+                    if guild not in self.admin_guilds:
                         if not silent:
                             await interaction.response.send_message(content='No',ephemeral=True)
                         await self.log.log(f'Manager command was accessed illegally from guild {guild.name} ({guild.id})')
@@ -91,7 +93,7 @@ class Cababas(Client):
                         if not silent:
                             await interaction.response.send_message(content='Bot is currently disabled.',ephemeral=True)
                         return False
-                    if guild not in whitelisted_guilds:
+                    if guild not in self.whitelisted_guilds:
                         if not silent:
                             await interaction.response.send_message(content='No',ephemeral=True)
                         return False
@@ -106,7 +108,7 @@ class Cababas(Client):
         @self.tree.command(
             name='toggle-discord-enabled',
             description='Enable / Disable the bot\'s commands. (only accessible by managers)',
-            guilds=admin_guilds,
+            guilds=self.admin_guilds,
             extras={
                 'on':True,
                 'off':False
@@ -123,13 +125,31 @@ class Cababas(Client):
                 else:
                     choice = False
             success = await Settings.set_key_data(Settings.SEC_DISCORD, Settings.KEY_ENABLED, choice, self.log)
-            if success:
-                await interaction.response.send_message(content=f'Set bot command status to `{choice}`',ephemeral=True)
-            else:
-                await interaction.response.send_message(content=f'Unable to set bot command status to `{choice}`. Check logs for any errors.',ephemeral=True)
+            try:
+                if success:
+                    await interaction.response.send_message(content=f'Set bot command status to `{choice}`',ephemeral=True)
+                else:
+                    await interaction.response.send_message(content=f'Unable to set bot command status to `{choice}`. Check logs for any errors.',ephemeral=True)
+            except InteractionResponded:
+                pass
 
-
-        for guild in whitelisted_guilds:
+        @self.tree.command(
+            name='shutdown',
+            description='Attempt to shut down the bot process. (only accessible by managers)',
+            guilds=self.admin_guilds
+        )
+        async def shutdown(interaction:Interaction):
+            if not (await check_flags(interaction=interaction,check_manager=True)):
+                return
+            try:
+                await interaction.response.send_message(content=f'Shutdown sent. Bye bye! 👋👋👋', ephemeral=True)
+            except InteractionResponded:
+                pass
+            except Exception as e:
+                await self.log.log(f'Ignoring the following error for the shutdown command: {get_traceback(e)}')
+            await self.log.task_completed(f'Shutting down process.')
+            exit()
+        for guild in self.whitelisted_guilds:
             try:
                 await self.tree.sync(guild=guild)
             except Exception as e:
@@ -140,7 +160,7 @@ class Cababas(Client):
         await self.log.task_completed(f'Commands successfully set up.')
 
     async def is_enabled(self):
-        return (await Settings.get_key_data(Settings.SEC_DISCORD,Settings.KEY_ENABLED, self.log))
+        return await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_ENABLED, self.log)
     
     async def get_whitelisted_guilds(self) -> list[Guild]:
         try:

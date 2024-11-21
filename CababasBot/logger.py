@@ -1,5 +1,4 @@
 import traceback
-from logging import Logger
 
 from discord import Client, TextChannel, HTTPException, Forbidden
 
@@ -91,7 +90,7 @@ class ClientLogger(PrefixedLogger):
 
 
 def log(message: str, prefix: str | None = '') -> None:
-    print(f'{RESET}{prefix}{WHITE} > {message}{RESET}')
+    print(f'{RESET}{prefix}{L_LOG} > {message}{RESET}')
 
 def success(message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_SUCCESS} > {message}{RESET}')
