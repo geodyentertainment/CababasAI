@@ -66,7 +66,7 @@ class Settings:
     KEY_AI_WHITELIST = 'ai_whitelisted_guilds'
     KEY_ERROR_CHANNEL = 'error_channel'
 
-    SEC_AI = 'ai'
+    SEC_AI = 'chatbot'
     KEY_HISTORY_MEM = 'history_memory'
     KEY_TEMP = 'temperature'
     KEY_TOP_P = 'top_p'

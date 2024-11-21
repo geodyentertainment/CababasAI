@@ -2,7 +2,7 @@ import traceback
 
 from discord import Client, TextChannel, HTTPException, Forbidden
 
-from CababasBot.secrets import ERROR_CHANNEL_ID
+from CababasBot.env_secrets import ERROR_CHANNEL_ID
 
 BLACK = '\033[30m'
 RED = '\033[31m'

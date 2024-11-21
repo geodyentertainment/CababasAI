@@ -5,6 +5,7 @@ from discord.ext import commands
 
 from CababasBot import activities
 from CababasBot.config_manager import Settings
+from CababasBot.chatbot import completion
 from CababasBot.logger import BRIGHT_GREEN, BRIGHT_RED, L_LOG, get_traceback, ClientLogger
 
 
