@@ -46,8 +46,11 @@ class Cababas(Client):
         
         self.whitelisted_guilds += self.admin_guilds
 
-        async def check_flags(interaction:Interaction,check_manager:bool|None=False,silent:bool|None=False) -> bool:
+        async def check_flags(interaction:Interaction,check_manager:bool|None=False,silent:bool|None=False,ignore_ready:bool|None=False) -> bool:
             try:
+                if not self.ready and not ignore_ready:
+                    return False
+
                 self.whitelisted_guilds = await self.get_whitelisted_guilds()
 
                 guild = interaction.guild
@@ -139,7 +142,7 @@ class Cababas(Client):
             guilds=self.admin_guilds
         )
         async def shutdown(interaction:Interaction):
-            if not (await check_flags(interaction=interaction,check_manager=True)):
+            if not (await check_flags(interaction=interaction,check_manager=True,ignore_ready=True)):
                 return
             try:
                 await interaction.response.send_message(content=f'Shutdown sent. Bye bye! 👋👋👋', ephemeral=True)
