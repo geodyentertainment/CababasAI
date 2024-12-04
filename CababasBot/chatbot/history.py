@@ -23,6 +23,15 @@ async def prompt_to_history(history_id:int|None, prompt:str, role:str, user:str|
     history.append(create_message(None, ROLE_SYSTEM,await AI.get_system(logger)))
     return history
 
+def read_history(history:list[dict[str,str]]) -> list[dict[str,str]]:
+    result = history.copy()
+    for i in range(len(result)):
+        message = result[i]
+        if K_PROMPTER in message.keys():
+            # result[i] = create_message(None, message.get(K_ROLE), f'{message.get(K_PROMPTER)} says: "{message.get(K_CONTENT)}"')
+            result[i] = create_message(None, message.get(K_ROLE), f'{message.get(K_CONTENT)}')
+    return result
+
 async def append_passed_history(history_id:int, passed_history:list[dict[str,str]], response:str, logger:PrefixedLogger|None=None):
     for i in range(len(passed_history)):
         if len(passed_history) <= i:

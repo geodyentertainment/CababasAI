@@ -5,8 +5,10 @@ from discord.ext import commands
 
 from CababasBot import activities
 from CababasBot.chatbot import chat_completion, history
+from CababasBot.chatbot.calculator import input_to_tokens, calculate_cost, TYPE_INPUT, TYPE_OUTPUT
 from CababasBot.config_manager import Settings
-from CababasBot.logger import BRIGHT_GREEN, BRIGHT_RED, L_LOG, get_traceback, ClientLogger
+from CababasBot.logger import BRIGHT_GREEN, BRIGHT_RED, L_LOG, get_traceback, ClientLogger, RED, RESET
+
 
 class Cababas(Client):
     def __init__(self, **options):
@@ -63,18 +65,36 @@ class Cababas(Client):
             content = content[len(chatbot_prefix) + 1:]
             async with message.channel.typing():
                 try:
+                    print_msg = f'Created completion for {sender.name} ({sender.id})'
+
                     passing_history = await history.prompt_to_history(history_id, content, history.ROLE_USER,
-                                                                str(sender.id), self.log, config)
+                                                                str(sender.name), self.log, config)
+                    processed_history = history.read_history(passing_history)
+                    print_msg += f'\nHistory length: {len(passing_history)}'
+                    print_msg += f'\nPrompt: > "{content}"'
 
                     completion = await chat_completion.generate_completion(
-                        history=passing_history,
+                        history=processed_history,
                         config=config,
                         logger=self.log
                     )
 
                     response = completion.choices[0].message.content
+                    finish_reason = completion.choices[0].finish_reason
+                    print_msg += f'\nResponse: < "{response}"'
+                    print_msg += f'\nFinish reason: {finish_reason}'
+
+                    inputTokens = input_to_tokens(str(processed_history)) + input_to_tokens(content)
+                    outputTokens = input_to_tokens(str(completion))
+                    inputCost = await calculate_cost(TYPE_INPUT, inputTokens, self.log, config)
+                    outputCost = await calculate_cost(TYPE_OUTPUT, outputTokens, self.log, config)
+                    print_msg += f'\nInput tokens: {inputTokens} {RED}${inputCost}{L_LOG}'
+                    print_msg += f'\nOutput tokens: {outputTokens} {RED}${outputCost}{L_LOG}'
+                    print_msg += f'\nTotal tokens: {inputTokens + outputTokens} {RED}${inputCost+outputCost}{L_LOG}'
+
                     await message.reply(content=response, mention_author=False)
                     await history.append_passed_history(history_id, passing_history, response, self.log)
+                    await self.log.log(print_msg)
                 except Exception as e:
                     await self.log.error(f'Could not generate completion for {sender.name} ({sender.id}) "{content}": {get_traceback(e)}')
 
