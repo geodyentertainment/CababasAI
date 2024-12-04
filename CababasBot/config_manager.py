@@ -255,7 +255,10 @@ class AI:
     async def get_history(history_id: int, logger: PrefixedLogger | None = default_logger) -> list[dict[str, str]]:
         await AI.create_folder(AI.HISTORY_FOLDER, logger)
         try:
-            return json.loads(await AI.read_file(f'{AI.HISTORY_FOLDER}/h-{str(history_id)}.json', '[]', logger))
+            result = json.loads(await AI.read_file(f'{AI.HISTORY_FOLDER}/h-{str(history_id)}.json', '[]', logger))
+            if not isinstance(result, list):
+                raise TypeError(f'History type is invalid. Received {type(result)}')
+            return result
         except Exception as e:
             await logger.error(f'Could not read history ({history_id}): {get_traceback(e)}')
             return []

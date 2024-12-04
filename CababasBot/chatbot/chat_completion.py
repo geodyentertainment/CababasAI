@@ -13,8 +13,8 @@ client = OpenAI(
     project=env_secrets.OPENAI_PROJ
 )
 
-async def generate_completion(history:list[dict[str,str]],logger:PrefixedLogger|None=None) -> ChatCompletion | Stream[ChatCompletionChunk]:
-    settings_config = await Settings.get_data(logger)
+async def generate_completion(history:list[dict[str,str]],config:dict|None=None,logger:PrefixedLogger|None=None) -> ChatCompletion:
+    settings_config = config if config is not None else await Settings.get_data(logger)
     return client.chat.completions.create(
         model=env_secrets.OPENAI_MOD,
         messages=history,
@@ -24,5 +24,6 @@ async def generate_completion(history:list[dict[str,str]],logger:PrefixedLogger|
         seed=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_SEED, logger, settings_config),
         max_tokens=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_MAX_COMP_TOK, logger, settings_config),
         frequency_penalty=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_FREQ_PENALTY, logger, settings_config),
-        presence_penalty=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_PRES_PENALTY, logger, settings_config)
+        presence_penalty=await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_PRES_PENALTY, logger, settings_config),
+        stream=False
     )

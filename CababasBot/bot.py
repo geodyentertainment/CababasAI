@@ -1,11 +1,12 @@
-from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, User, Message
+from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, \
+    User, Message, InteractionResponse
 from discord.app_commands import CommandTree, choices, Choice
 from discord.ext import commands
 
 from CababasBot import activities
+from CababasBot.chatbot import chat_completion, history
 from CababasBot.config_manager import Settings
 from CababasBot.logger import BRIGHT_GREEN, BRIGHT_RED, L_LOG, get_traceback, ClientLogger
-
 
 class Cababas(Client):
     def __init__(self, **options):
@@ -58,7 +59,24 @@ class Cababas(Client):
             chatbot_prefix = chatbot_prefix.lower()
 
         if (self.ready == True) and (content.lower().startswith(f'{chatbot_prefix} ')) and (await Settings.get_key_data(Settings.SEC_AI,Settings.KEY_ENABLED,self.log,config) == True) and (await Settings.get_key_data(Settings.SEC_DISCORD,Settings.KEY_ENABLED,self.log,config) == True):
-            content = content[len(chatbot_prefix)+1:]
+            history_id = message.guild.id
+            content = content[len(chatbot_prefix) + 1:]
+            async with message.channel.typing():
+                try:
+                    passing_history = await history.prompt_to_history(history_id, content, history.ROLE_USER,
+                                                                str(sender.id), self.log, config)
+
+                    completion = await chat_completion.generate_completion(
+                        history=passing_history,
+                        config=config,
+                        logger=self.log
+                    )
+
+                    response = completion.choices[0].message.content
+                    await message.reply(content=response, mention_author=False)
+                    await history.append_passed_history(history_id, passing_history, response, self.log)
+                except Exception as e:
+                    await self.log.error(f'Could not generate completion for {sender.name} ({sender.id}) "{content}": {get_traceback(e)}')
 
 
     async def setup_commands(self):
@@ -185,7 +203,6 @@ class Cababas(Client):
             except Exception as e:
                 await self.log.error(f'Failed to sync command tree to guild {type(guild)}{guild.id}: {get_traceback(e)}')
                 return
-            
 
         await self.log.task_completed(f'Commands successfully set up.')
 
