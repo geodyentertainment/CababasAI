@@ -73,27 +73,37 @@ class Cababas(Client):
                     print_msg += f'\nHistory length: {len(passing_history)}'
                     print_msg += f'\nPrompt: > "{content}"'
 
-                    completion = await chat_completion.generate_completion(
-                        history=processed_history,
-                        config=config,
-                        logger=self.log
-                    )
+                    prompt_tokens = input_to_tokens(content)
+                    if prompt_tokens > await Settings.get_key_data(Settings.SEC_AI, Settings.KEY_MAX_PROMPT_TOK, self.log, config):
+                        print_msg += f'\n{RED}Prompt contains too many tokens ({prompt_tokens}).{L_LOG}'
+                        response = f'too long!'
+                    else:
+                        completion = await chat_completion.generate_completion(
+                            history=processed_history,
+                            config=config,
+                            logger=self.log
+                        )
 
-                    response = completion.choices[0].message.content
-                    finish_reason = completion.choices[0].finish_reason
-                    print_msg += f'\nResponse: < "{response}"'
-                    print_msg += f'\nFinish reason: {finish_reason}'
+                        response = completion.choices[0].message.content
+                        finish_reason = completion.choices[0].finish_reason
+                        print_msg += f'\nResponse: < "{response}"'
+                        print_msg += f'\nFinish reason: {finish_reason}'
 
-                    inputTokens = input_to_tokens(str(processed_history)) + input_to_tokens(content)
-                    outputTokens = input_to_tokens(str(completion))
-                    inputCost = await calculate_cost(TYPE_INPUT, inputTokens, self.log, config)
-                    outputCost = await calculate_cost(TYPE_OUTPUT, outputTokens, self.log, config)
-                    print_msg += f'\nInput tokens: {inputTokens} {RED}${inputCost}{L_LOG}'
-                    print_msg += f'\nOutput tokens: {outputTokens} {RED}${outputCost}{L_LOG}'
-                    print_msg += f'\nTotal tokens: {inputTokens + outputTokens} {RED}${inputCost+outputCost}{L_LOG}'
+                        if finish_reason == 'length':
+                            response = f'{response} ... *yawn*'
+
+                        input_tokens = input_to_tokens(str(processed_history)) + input_to_tokens(content)
+                        output_tokens = input_to_tokens(str(completion))
+                        input_cost = await calculate_cost(TYPE_INPUT, input_tokens, self.log, config)
+                        output_cost = await calculate_cost(TYPE_OUTPUT, output_tokens, self.log, config)
+
+                        print_msg += f'\nInput tokens: {input_tokens} {RED}${input_cost}{L_LOG}'
+                        print_msg += f'\nOutput tokens: {output_tokens} {RED}${output_cost}{L_LOG}'
+                        print_msg += f'\nTotal tokens: {input_tokens + output_tokens} {RED}${input_cost+output_cost}{L_LOG}'
+
+                        await history.append_passed_history(history_id, passing_history, response, self.log)
 
                     await message.reply(content=response, mention_author=False)
-                    await history.append_passed_history(history_id, passing_history, response, self.log)
                     await self.log.log(print_msg)
                 except Exception as e:
                     await self.log.error(f'Could not generate completion for {sender.name} ({sender.id}) "{content}": {get_traceback(e)}')
