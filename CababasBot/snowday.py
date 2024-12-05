@@ -22,8 +22,8 @@ def datetime_to_daycode(day: datetime.datetime):
     return '{0:%Y%m%d}'.format(day)
 
 
-async def get_current_time():
-    return datetime.datetime.now(tz=ZoneInfo(str(await Settings.get_key_data(Settings.SEC_SNOWDAY, Settings.KEY_TIMEZONE))))
+async def get_current_time(config:dict|None=None):
+    return datetime.datetime.now(tz=ZoneInfo(str(await Settings.get_key_data(Settings.SEC_SNOWDAY, Settings.KEY_TIMEZONE, None, config))))
 
 class Prediction:
     def __init__(self):
@@ -39,11 +39,11 @@ class Prediction:
 
         return None
 
-    async def chance_today(self):
-        return self.chance(await get_current_time())
+    async def chance_today(self, config:dict|None=None):
+        return self.chance(await get_current_time(config))
 
-    async def chance_tmrw(self):
-        return self.chance(await get_current_time() + datetime.timedelta(days=1))
+    async def chance_tmrw(self, config:dict|None=None):
+        return self.chance(await get_current_time(config) + datetime.timedelta(days=1))
 
 
 def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC):
