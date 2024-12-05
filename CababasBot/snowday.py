@@ -47,7 +47,6 @@ def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC
             'extra': schooltype
         }
     ).text
-
     js_predictions = re.findall(r'theChance\[\d+] = [\d.]+;', response)
 
     result = Prediction()
@@ -58,5 +57,6 @@ def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC
         chance = float(re.findall(r'[\d+.]+', value)[0])
 
         result._set_data(daycode, chance)
+        break
 
     return result
