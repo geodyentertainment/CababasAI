@@ -35,6 +35,7 @@ class Prediction:
         return self.chance(datetime.datetime.today())
 
     def chance_tmrw(self):
+        print(datetime.datetime.today())
         return self.chance(datetime.datetime.today() + datetime.timedelta(days=1))
 
 
@@ -57,6 +58,6 @@ def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC
         chance = float(re.findall(r'[\d+.]+', value)[0])
 
         result._set_data(daycode, chance)
-        print(f'{daycode} = {chance}')
+        print(f'{daycode} = {chance}%')
 
     return result
