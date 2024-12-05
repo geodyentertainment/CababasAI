@@ -57,6 +57,6 @@ def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC
         chance = float(re.findall(r'[\d+.]+', value)[0])
 
         result._set_data(daycode, chance)
-        break
+        print(f'{daycode} = {chance}')
 
     return result
