@@ -86,6 +86,7 @@ class Settings:
 
     SEC_SNOWDAY = 'snowday'
     KEY_POSTAL = 'postal_code'
+    KEY_TIMEZONE = 'timezone'
 
     SAVE_NAME = 'settings.json'
     SAVE_DEFAULT: dict[str, dict[str, any]] = {
@@ -101,7 +102,8 @@ class Settings:
             KEY_AI_PREFIX: 'cab'
         },
         SEC_SNOWDAY: {
-            KEY_POSTAL:''
+            KEY_POSTAL:'',
+            KEY_TIMEZONE:'America/Toronto'
         },
         SEC_AI: {
             KEY_ENABLED: False,

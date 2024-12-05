@@ -254,11 +254,11 @@ class Cababas(Client):
                 prediction = snowday.predict(
                     str(await Settings.get_key_data(Settings.SEC_SNOWDAY, Settings.KEY_POSTAL, self.log)),
                 )
-                chance = prediction.chance_tmrw()
+                chance = await prediction.chance_tmrw()
                 if chance is None:
                     await interaction.response.send_message(content=f'idk :(')
                     return
-                await interaction.response.send_message(content=f'Snowday tomorrow: `{chance}% ️` ❄️')
+                await interaction.response.send_message(content=f'Snowday tmr is {int(chance)}% ️ ❄️')
             except InteractionResponded:
                 pass
             except Exception as e:

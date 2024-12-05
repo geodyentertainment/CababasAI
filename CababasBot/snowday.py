@@ -1,9 +1,14 @@
 # Made by https://gist.github.com/iahuang
 # Original source code: https://gist.github.com/iahuang/909b8557765c1cb6d53a3ebe70c98c6b
+from datetime import tzinfo
+from zoneinfo import ZoneInfo
 
 import requests
 import re
 import datetime
+
+from CababasBot.config_manager import Settings
+
 
 class SchoolType:
     PUBLIC = 0
@@ -16,6 +21,9 @@ class SchoolType:
 def datetime_to_daycode(day: datetime.datetime):
     return '{0:%Y%m%d}'.format(day)
 
+
+async def get_current_time():
+    return datetime.datetime.now(tz=ZoneInfo(str(await Settings.get_key_data(Settings.SEC_SNOWDAY, Settings.KEY_TIMEZONE))))
 
 class Prediction:
     def __init__(self):
@@ -31,12 +39,11 @@ class Prediction:
 
         return None
 
-    def chance_today(self):
-        return self.chance(datetime.datetime.today())
+    async def chance_today(self):
+        return self.chance(await get_current_time())
 
-    def chance_tmrw(self):
-        print(datetime.datetime.today())
-        return self.chance(datetime.datetime.today() + datetime.timedelta(days=1))
+    async def chance_tmrw(self):
+        return self.chance(await get_current_time() + datetime.timedelta(days=1))
 
 
 def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC):
@@ -58,6 +65,5 @@ def predict(zipcode: str, snowdays: int = 0, schooltype: int = SchoolType.PUBLIC
         chance = float(re.findall(r'[\d+.]+', value)[0])
 
         result._set_data(daycode, chance)
-        print(f'{daycode} = {chance}%')
 
     return result
