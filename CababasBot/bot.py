@@ -1,9 +1,9 @@
 from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, \
-    User, Message, InteractionResponse
+    User, Message
 from discord.app_commands import CommandTree, choices, Choice
 from discord.ext import commands
 
-from CababasBot import activities
+from CababasBot import activities, snowday
 from CababasBot.chatbot import chat_completion, history
 from CababasBot.chatbot.calculator import input_to_tokens, calculate_cost, TYPE_INPUT, TYPE_OUTPUT
 from CababasBot.config_manager import Settings
@@ -63,6 +63,7 @@ class Cababas(Client):
         if (self.ready == True) and (content.lower().startswith(f'{chatbot_prefix} ')) and (await Settings.get_key_data(Settings.SEC_AI,Settings.KEY_ENABLED,self.log,config) == True) and (await Settings.get_key_data(Settings.SEC_DISCORD,Settings.KEY_ENABLED,self.log,config) == True):
             history_id = message.guild.id
             content = content[len(chatbot_prefix) + 1:]
+            await self.log.log(f'Received request for completion from {sender.name} ({sender.id})')
             async with message.channel.typing():
                 try:
                     print_msg = f'Created completion for {sender.name} ({sender.id})'
@@ -120,12 +121,10 @@ class Cababas(Client):
                 if not self.ready and not ignore_ready:
                     return False
 
-                self.whitelisted_guilds = await self.get_whitelisted_guilds()
-
-                guild = interaction.guild
+                current_guild = interaction.guild
                 author = interaction.user
 
-                if not isinstance(guild, Guild):
+                if not isinstance(current_guild, Guild):
                     if not silent:
                         await interaction.response.send_message(content='Could not find guild. Please try again.',ephemeral=True)
                     return False
@@ -135,9 +134,6 @@ class Cababas(Client):
                     return False
 
                 if check_manager:
-                    self.admin_guilds = await self.get_admin_guilds()
-                    self.whitelisted_guilds += self.admin_guilds
-
                     try:
                         managers:dict[str,int] = await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_MANAGERS, self.log)
                         if not isinstance(managers, dict):
@@ -148,10 +144,10 @@ class Cababas(Client):
                         await self.log.error(f'Could not get command managers: {get_traceback(e)}')
                         return False
 
-                    if guild not in self.admin_guilds:
+                    if current_guild not in self.admin_guilds:
                         if not silent:
                             await interaction.response.send_message(content='No',ephemeral=True)
-                        await self.log.log(f'Manager command was accessed illegally from guild {guild.name} ({guild.id})')
+                        await self.log.log(f'Manager command was accessed illegally from guild {current_guild.name} ({current_guild.id})')
                         return False
                     if author.id not in managers.values():
                         if not silent:
@@ -165,7 +161,7 @@ class Cababas(Client):
                         if not silent:
                             await interaction.response.send_message(content='Bot is currently disabled.',ephemeral=True)
                         return False
-                    if guild not in self.whitelisted_guilds:
+                    if current_guild not in self.whitelisted_guilds:
                         if not silent:
                             await interaction.response.send_message(content='No',ephemeral=True)
                         return False
@@ -227,6 +223,48 @@ class Cababas(Client):
                 await self.log.log(f'Ignoring the following error for the shutdown command: {get_traceback(e)}')
             await self.log.task_completed(f'Shutting down process.')
             exit()
+
+        @self.tree.command(
+            name='refresh-guilds',
+            description='Refresh the stored whitelisted guilds.',
+            guilds = self.admin_guilds
+        )
+        async def refresh_guilds(interaction:Interaction):
+            if not (await check_flags(interaction=interaction,check_manager=True,ignore_ready=True)):
+                return
+            try:
+                self.whitelisted_guilds = await self.get_whitelisted_guilds()
+                self.admin_guilds = await self.get_admin_guilds()
+                self.whitelisted_guilds += self.admin_guilds
+                await interaction.response.send_message(content=f'Whitelisted: `{self.whitelisted_guilds}`', ephemeral=True)
+            except InteractionResponded:
+                pass
+            except Exception as e:
+                await self.log.error(f'Could not refresh guilds: {get_traceback(e)}')
+
+        @self.tree.command(
+            name='snowday',
+            description='Is tomorrow going to be a snowday?',
+            guilds=self.whitelisted_guilds
+        )
+        async def snowday_tmr(interaction:Interaction):
+            if not (await check_flags(interaction=interaction,check_manager=False,ignore_ready=False)):
+                return
+            try:
+                prediction = snowday.predict(
+                    str(await Settings.get_key_data(Settings.SEC_SNOWDAY, Settings.KEY_POSTAL, self.log)),
+                )
+                chance = prediction.chance_tmrw()
+                if chance is None:
+                    await interaction.response.send_message(content=f'idk :(')
+                    return
+                await interaction.response.send_message(content=f'Snowday tomorrow: `{chance}% ️` ❄️')
+            except InteractionResponded:
+                pass
+            except Exception as e:
+                await self.log.error(f'Could not predict snowday: {get_traceback(e)}')
+                await interaction.response.send_message(content=f'Try again, something went wrong :(', ephemeral=True)
+
         for guild in self.whitelisted_guilds:
             try:
                 await self.tree.sync(guild=guild)

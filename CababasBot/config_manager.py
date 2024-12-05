@@ -84,6 +84,9 @@ class Settings:
     KEY_COMP_COST = 'completion_cost_per_token'
     KEY_AI_PREFIX = 'ai-prefix'
 
+    SEC_SNOWDAY = 'snowday'
+    KEY_POSTAL = 'postal_code'
+
     SAVE_NAME = 'settings.json'
     SAVE_DEFAULT: dict[str, dict[str, any]] = {
         SEC_DISCORD: {
@@ -96,6 +99,9 @@ class Settings:
             KEY_COMMANDS_ADMIN: {},
             KEY_AI_WHITELIST: {},
             KEY_AI_PREFIX: 'cab'
+        },
+        SEC_SNOWDAY: {
+            KEY_POSTAL:''
         },
         SEC_AI: {
             KEY_ENABLED: False,
