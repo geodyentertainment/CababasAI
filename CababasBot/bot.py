@@ -1,5 +1,5 @@
-from discord import Client, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, \
-    User, Message
+from discord import Client, Embed, Intents, InteractionResponded, Member, Status, Guild, NotFound, HTTPException, Interaction, \
+    User, Message, TextChannel, Forbidden
 from discord.app_commands import CommandTree, choices, Choice
 from discord.ext import commands
 
@@ -63,13 +63,12 @@ class Cababas(Client):
         if (self.ready == True) and (content.lower().startswith(f'{chatbot_prefix} ')) and (await Settings.get_key_data(Settings.SEC_AI,Settings.KEY_ENABLED,self.log,config) == True) and (await Settings.get_key_data(Settings.SEC_DISCORD,Settings.KEY_ENABLED,self.log,config) == True):
             history_id = message.guild.id
             content = content[len(chatbot_prefix) + 1:]
-            await self.log.log(f'Received request for completion from {sender.name} ({sender.id})')
-            async with message.channel.typing():
-                try:
-                    print_msg = f'Created completion for {sender.name} ({sender.id})'
-
+            await self.log.log(f'Received request for completion from {sender.name} ({sender.id}) in {message.channel.id}')
+            try:
+                async with message.channel.typing():
+                    print_msg = f'Creating completion for {sender.name} ({sender.id}):'
                     passing_history = await history.prompt_to_history(history_id, content, history.ROLE_USER,
-                                                                str(sender.name), self.log, config)
+                                                                str(sender.id), self.log, config)
                     processed_history = history.read_history(passing_history)
                     print_msg += f'\nHistory length: {len(passing_history)}'
                     print_msg += f'\nPrompt: > "{content}"'
@@ -93,8 +92,8 @@ class Cababas(Client):
                         if finish_reason == 'length':
                             response = f'{response} ... *yawn*'
 
-                        input_tokens = input_to_tokens(str(processed_history)) + input_to_tokens(content)
-                        output_tokens = input_to_tokens(str(completion))
+                        input_tokens = completion.usage.prompt_tokens
+                        output_tokens = completion.usage.completion_tokens
                         input_cost = await calculate_cost(TYPE_INPUT, input_tokens, self.log, config)
                         output_cost = await calculate_cost(TYPE_OUTPUT, output_tokens, self.log, config)
 
@@ -104,12 +103,60 @@ class Cababas(Client):
 
                         await history.append_passed_history(history_id, passing_history, response, self.log)
 
+                        # Attempt logging completion to channel
+                        try:
+                            comp_channel = int(
+                                await Settings.get_key_data(Settings.SEC_DISCORD, Settings.KEY_COMPLETION_CHANNEL))
+                        except TypeError:
+                            await self.log.error(f'Completion channel ID is not numeric, could not be converted to int.')
+                            return
+
+                        try:
+                            channel = self.get_channel(comp_channel)
+                            if not isinstance(channel, TextChannel):
+                                await self.log.error(
+                                    f'Incorrect error channel type {type(channel)}. {TextChannel} required.')
+                                return
+                            embed = Embed()
+                            embed.title = f'Completion {str(completion.id)[:5]}'
+                            embed.description = f'<@{sender.id}> in channel <#{message.channel.id}>.'
+                            embed.add_field(
+                                name=f'Prompt',
+                                value=f'`{content}`',
+                                inline=False
+                            )
+                            embed.add_field(
+                                name=f'Response',
+                                value=f'`{response}`',
+                                inline=False
+                            )
+                            embed.add_field(
+                                name=f'Input',
+                                value=f'`{input_tokens}` (||${round(input_cost, 4)}||)',
+                                inline=True
+                            )
+                            embed.add_field(
+                                name=f'Output',
+                                value=f'`{output_tokens}` (||${round(output_cost, 4)}||)',
+                                inline=True
+                            )
+                            embed.add_field(
+                                name=f'Total',
+                                value=f'`{input_tokens + output_tokens}` (||${round(input_cost + output_cost, 4)}||)',
+                                inline=True
+                            )
+                            await channel.send(embed=embed)
+                        except Forbidden:
+                            await self.log.error(
+                                f'Please check that bot has permissions to send messages in the completion channel {comp_channel}.')
+                        except HTTPException as e:
+                            await self.log.error(f'Failed to send completion log to channel: {get_traceback(e)}')
+
                     await message.reply(content=response, mention_author=False)
-                    await self.log.log(print_msg)
-                except Exception as e:
-                    await self.log.error(f'Could not generate completion for {sender.name} ({sender.id}) "{content}": {get_traceback(e)}')
 
-
+                await self.log.log(print_msg)
+            except Exception as e:
+                await self.log.error(f'Could not generate completion for {sender.name} ({sender.id}) "{content}": {get_traceback(e)}')
     async def setup_commands(self):
         self.whitelisted_guilds = await self.get_whitelisted_guilds()
         self.admin_guilds = await self.get_admin_guilds()

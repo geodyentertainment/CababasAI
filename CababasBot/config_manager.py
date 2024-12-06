@@ -1,4 +1,3 @@
-import asyncio
 import json
 from json import JSONDecodeError
 from os import mkdir
@@ -69,6 +68,7 @@ class Settings:
     KEY_COMMANDS_WHITELIST = 'commands_whitelisted_guilds'
     KEY_COMMANDS_ADMIN = 'commands_admin_guilds'
     KEY_AI_WHITELIST = 'ai_whitelisted_guilds'
+    KEY_COMPLETION_CHANNEL = 'completion_channel'
 
     SEC_AI = 'chatbot'
     KEY_HISTORY_MEM = 'history_memory'
@@ -99,7 +99,8 @@ class Settings:
             KEY_COMMANDS_WHITELIST: {},
             KEY_COMMANDS_ADMIN: {},
             KEY_AI_WHITELIST: {},
-            KEY_AI_PREFIX: 'cab'
+            KEY_AI_PREFIX: 'cab',
+            KEY_COMPLETION_CHANNEL: 0
         },
         SEC_SNOWDAY: {
             KEY_POSTAL:'',
@@ -270,7 +271,6 @@ class AI:
         except Exception as e:
             await logger.error(f'Could not read history ({history_id}): {get_traceback(e)}')
             return []
-
 
 try:
     mkdir(CONFIG_PATH)

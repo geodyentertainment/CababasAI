@@ -1,3 +1,5 @@
+from os import mkdir
+import time
 import traceback
 
 from discord import Client, TextChannel, HTTPException, Forbidden
@@ -91,15 +93,56 @@ class ClientLogger(PrefixedLogger):
 
 def log(message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_LOG} > {message}{RESET}')
+    LogFile.append_message(message=f'{prefix} > {message}',type='LOG')
 
 def success(message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_SUCCESS} > {message}{RESET}')
+    LogFile.append_message(message=f'{prefix} > {message}',type='SUCCESS')
 
 def error(error_message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_ERROR} > {error_message}{RESET}')
+    LogFile.append_message(message=f'{prefix} > {error_message}',type='ERROR')
 
 def task(task_message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_TASK} > {task_message}{RESET}', end='\r', flush=True)
+    LogFile.append_message(message=f'{prefix} > {task_message}',type='TASK')
 
 def task_completed(task_message: str, prefix: str | None = '') -> None:
     print(f'{RESET}{prefix}{L_TASK_COMPLETED} > {task_message}{RESET}')
+    LogFile.append_message(message=f'{prefix} > {task_message}',type='TASK_COMPLETE')
+
+class LogFile:
+    folder=None
+    name=None
+    last_type=None
+
+    @staticmethod
+    def append_message(message:str|None='\n',type:str|None='UNKNOWN'):
+        if LogFile.folder is None:
+            LogFile.folder = f'logs'
+        if LogFile.name is None:
+            LogFile.name = f'{LogFile.folder}/log-{str(int(time.time()))}.txt'
+
+        try:
+            mkdir(LogFile.folder)
+        except FileExistsError:
+            pass
+        
+        try:
+            with open(file=LogFile.name, mode='x', encoding='utf-8') as file:
+                    file.write(f'LOG {LogFile.name} START')
+        except FileExistsError:
+            pass
+        except Exception as e:
+            print(f'{L_ERROR} > COULD NOT CREATE LOG FILE: {get_traceback(e)}{RESET}')
+            return
+
+        try:
+            with open(file=LogFile.name, mode="a", encoding='utf-8') as logFile:
+                if LogFile.last_type == type:
+                    logFile.write(f'\n{type} {message}')
+                else:
+                    LogFile.last_type = type
+                    logFile.write(f'\n\n{type} {message}')
+        except Exception as e:
+            print(f'{L_ERROR} > COULD NOT LOG TO LOG FILE: {get_traceback(e)}{RESET}')
