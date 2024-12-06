@@ -118,7 +118,8 @@ class Cababas(Client):
                                     f'Incorrect error channel type {type(channel)}. {TextChannel} required.')
                                 return
                             embed = Embed()
-                            embed.title = f'Completion {str(completion.id)[:5]}'
+                            completion_id = str(completion.id)
+                            embed.title = f'Completion `...{completion_id[len(completion_id)-10:]}`'
                             embed.description = f'<@{sender.id}> in channel <#{message.channel.id}>.'
                             embed.add_field(
                                 name=f'Prompt',
